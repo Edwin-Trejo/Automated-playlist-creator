@@ -22,11 +22,12 @@ if not CLIENT_ID or not CLIENT_SECRET:
 
 class SpotifyManager:
     def __init__(self):
+        # Updated scopes to include everything needed for audio features
         self.auth_manager = SpotifyOAuth(
             client_id=CLIENT_ID,
             client_secret=CLIENT_SECRET,
             redirect_uri=REDIRECT_URI,
-            scope="user-library-read playlist-modify-private playlist-modify-public user-read-private",
+            scope="user-library-read playlist-modify-private playlist-modify-public user-read-private user-read-playback-state user-read-recently-played",
             cache_path=".cache",
             show_dialog=True
         )
@@ -42,11 +43,24 @@ class SpotifyManager:
             token_info = self.auth_manager.get_cached_token()
             if token_info:
                 logger.info(f"Granted scopes: {token_info.get('scope')}")
+                logger.debug(f"Full token: {token_info}")
             else:
                 logger.warning("No cached token found")
         except Exception as e:
             logger.error(f"Failed to validate Spotify connection: {e}")
             raise
+
+    def clear_token_cache(self):
+        """Clear the token cache to force re-authentication."""
+        try:
+            cache_path = ".cache"
+            if os.path.exists(cache_path):
+                os.remove(cache_path)
+                logger.info("Token cache cleared. Please re-authenticate.")
+            else:
+                logger.info("No token cache found to clear.")
+        except Exception as e:
+            logger.error(f"Error clearing token cache: {e}")
 
     def get_liked_tracks(self, limit: int = None) -> List[Dict]:
         """
@@ -109,8 +123,11 @@ class SpotifyManager:
             Dictionary of audio features or None if not found
         """
         try:
+            logger.debug(f"Fetching audio features for track: {track_id}")
             features = self.sp.audio_features([track_id])
+            
             if features and features[0]:
+                logger.debug(f"Successfully fetched audio features for {track_id}")
                 return features[0]
             else:
                 logger.warning(f"No audio features found for track ID: {track_id}")
@@ -118,6 +135,9 @@ class SpotifyManager:
                 
         except Exception as e:
             logger.error(f"Error getting audio features for {track_id}: {e}")
+            # Log the full exception for debugging
+            logger.error(f"Exception type: {type(e).__name__}")
+            logger.error(f"Exception args: {e.args}")
             return None
 
     def get_audio_features_batch(self, track_ids: List[str]) -> Dict[str, Dict]:
@@ -152,6 +172,33 @@ class SpotifyManager:
         except Exception as e:
             logger.error(f"Error fetching audio features batch: {e}")
             return {}
+
+    def test_audio_features_access(self):
+        """Test audio features access with a well-known track."""
+        try:
+            # Use a very popular track that should definitely exist
+            test_track_id = "4iV5W9uYEdYUVa79Axb7Rh"  # Shape of You by Ed Sheeran
+            
+            logger.info(f"Testing audio features access with track: {test_track_id}")
+            
+            # First, let's try to get track info to make sure the track exists
+            track_info = self.sp.track(test_track_id)
+            logger.info(f"Track found: {track_info['name']} by {track_info['artists'][0]['name']}")
+            
+            # Now try to get audio features
+            features = self.sp.audio_features([test_track_id])
+            
+            if features and features[0]:
+                logger.info("✅ Audio features access successful!")
+                logger.info(f"Sample features: danceability={features[0]['danceability']}, energy={features[0]['energy']}")
+                return True
+            else:
+                logger.error("❌ Audio features returned None or empty")
+                return False
+                
+        except Exception as e:
+            logger.error(f"❌ Audio features test failed: {e}")
+            return False
 
     def get_current_user_id(self) -> str:
         """Get the current user's Spotify ID."""
@@ -271,3 +318,9 @@ def create_playlist_if_not_exists(user_id, genre_name):
 
 def add_track_to_playlist(playlist_id, track_id):
     return spotify_manager.add_track_to_playlist(playlist_id, track_id)
+
+def clear_token_cache():
+    return spotify_manager.clear_token_cache()
+
+def test_audio_features():
+    return spotify_manager.test_audio_features_access()

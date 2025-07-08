@@ -14,7 +14,49 @@ def index():
     <p>The application is running!</p>
     <p><a href="/sort">Sort your liked songs into playlists</a></p>
     <p><a href="/status">Check connection status</a></p>
+    <p><a href="/debug">Debug information</a></p>
+    <p><a href="/clear_cache">Clear token cache (if having auth issues)</a></p>
+    <p><a href="/test_audio">Test audio features access</a></p>
     """
+
+@app.route('/clear_cache')
+def clear_cache():
+    """Clear the Spotify token cache and redirect to re-authenticate."""
+    try:
+        spotify_api.clear_token_cache()
+        return """
+        <h2>Token Cache Cleared</h2>
+        <p>Your authentication token has been cleared. Please click the link below to re-authenticate:</p>
+        <p><a href="/status">Re-authenticate and check status</a></p>
+        <p><a href="/">Back to home</a></p>
+        """
+    except Exception as e:
+        logger.error(f"Error clearing cache: {e}")
+        return f"Error clearing cache: {str(e)}", 500
+
+@app.route('/test_audio')
+def test_audio():
+    """Test audio features access."""
+    try:
+        success = spotify_api.test_audio_features()
+        if success:
+            return """
+            <h2>✅ Audio Features Test Successful</h2>
+            <p>Audio features access is working properly!</p>
+            <p><a href="/sort">Try sorting your music</a></p>
+            <p><a href="/">Back to home</a></p>
+            """
+        else:
+            return """
+            <h2>❌ Audio Features Test Failed</h2>
+            <p>There's still an issue with audio features access.</p>
+            <p><a href="/clear_cache">Try clearing the token cache</a></p>
+            <p><a href="/debug">Check debug information</a></p>
+            <p><a href="/">Back to home</a></p>
+            """
+    except Exception as e:
+        logger.error(f"Error testing audio features: {e}")
+        return f"Error testing audio features: {str(e)}", 500
 
 @app.route('/status')
 def status():
@@ -29,13 +71,16 @@ def status():
         # Get user profile info
         user_profile = spotify_api.spotify_manager.sp.current_user()
         
-        # Test audio features access with a dummy call
+        # Test audio features access with improved error handling
+        audio_features_status = "❌ Not tested yet"
         try:
-            # Try to get audio features for a non-existent track to test permissions
-            test_features = spotify_api.spotify_manager.sp.audio_features(['4iV5W9uYEdYUVa79Axb7Rh'])  # Random track ID
-            audio_features_access = "✅ Audio features accessible"
+            success = spotify_api.test_audio_features()
+            if success:
+                audio_features_status = "✅ Audio features accessible"
+            else:
+                audio_features_status = "❌ Audio features access failed"
         except Exception as af_error:
-            audio_features_access = f"❌ Audio features error: {str(af_error)}"
+            audio_features_status = f"❌ Audio features error: {str(af_error)}"
         
         status_info = {
             "status": "connected",
@@ -43,14 +88,14 @@ def status():
             "user_display_name": user_profile.get('display_name', 'N/A'),
             "user_country": user_profile.get('country', 'N/A'),
             "granted_scopes": granted_scopes,
-            "audio_features_test": audio_features_access,
+            "audio_features_test": audio_features_status,
             "message": "Spotify API connection is working"
         }
         
         # Log detailed info
         logger.info(f"Status check - User: {user_id}")
         logger.info(f"Granted scopes: {granted_scopes}")
-        logger.info(f"Audio features test: {audio_features_access}")
+        logger.info(f"Audio features test: {audio_features_status}")
         
         return jsonify(status_info)
         
@@ -176,13 +221,11 @@ def debug_info():
         
         # Test 3: Audio features (the problematic one)
         try:
-            # Use a popular song's ID for testing
-            test_track_id = "4iV5W9uYEdYUVa79Axb7Rh"  # "Shape of You" by Ed Sheeran
-            audio_features = sp.audio_features([test_track_id])
-            if audio_features and audio_features[0]:
+            success = spotify_api.test_audio_features()
+            if success:
                 debug_data["api_tests"]["audio_features"] = "✅ Success"
             else:
-                debug_data["api_tests"]["audio_features"] = "❌ No data returned"
+                debug_data["api_tests"]["audio_features"] = "❌ Failed (check logs for details)"
         except Exception as e:
             debug_data["api_tests"]["audio_features"] = f"❌ Error: {str(e)}"
         
@@ -212,6 +255,8 @@ def debug_html():
     html += '<p><a href="/">Back to home</a></p>'
     
     return html
+
+@app.route('/sort_batch')
 def sort_liked_songs_batch():
     """More efficient batch processing version."""
     logger.info("Starting batch sort")
