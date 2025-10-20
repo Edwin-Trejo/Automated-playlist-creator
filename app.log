@@ -1,0 +1,379 @@
+2025-07-07 20:00:59.085 | INFO     | __main__:<module>:281 - Starting Flask app
+2025-07-07 20:01:00.945 | INFO     | __main__:<module>:281 - Starting Flask app
+2025-07-07 20:02:28.553 | INFO     | __main__:<module>:281 - Starting Flask app
+2025-07-07 20:02:30.443 | INFO     | __main__:<module>:281 - Starting Flask app
+2025-07-07 20:03:47.859 | INFO     | __main__:index:11 - Index page accessed
+2025-07-07 20:03:52.031 | INFO     | __main__:status:51 - Status check - User: edwiin00
+2025-07-07 20:03:52.031 | INFO     | __main__:status:52 - Granted scopes: user-library-read playlist-modify-private playlist-modify-public user-read-private
+2025-07-07 20:03:52.031 | INFO     | __main__:status:53 - Audio features test: ❌ Audio features error: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:04:26.532 | INFO     | __main__:sort_liked_songs:66 - Starting /sort route
+2025-07-07 20:04:26.596 | INFO     | __main__:sort_liked_songs:71 - Processing for user: edwiin00
+2025-07-07 20:04:26.596 | INFO     | __main__:sort_liked_songs:74 - Fetching liked tracks...
+2025-07-07 20:04:26.596 | DEBUG    | spotify_api:get_liked_tracks:67 - Fetching liked tracks batch: offset=0
+2025-07-07 20:04:26.938 | INFO     | spotify_api:get_liked_tracks:94 - Fetched 20 liked tracks
+2025-07-07 20:04:26.938 | INFO     | __main__:sort_liked_songs:81 - Found 20 liked tracks to process
+2025-07-07 20:04:26.938 | DEBUG    | __main__:sort_liked_songs:89 - Processing track 1/20: LET'S GO by Jaden Bojsen, Sami Brielle
+2025-07-07 20:04:26.979 | ERROR    | spotify_api:get_audio_features:120 - Error getting audio features for 20Y4EAmSXru3foatDg4OqN: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=20Y4EAmSXru3foatDg4OqN:
+ None, reason: None
+2025-07-07 20:04:26.979 | WARNING  | __main__:sort_liked_songs:94 - No features found for LET'S GO - skipping.
+2025-07-07 20:04:26.979 | DEBUG    | __main__:sort_liked_songs:89 - Processing track 2/20: FKN Movie by KAROL G, Mariah Angeliq
+2025-07-07 20:04:27.021 | ERROR    | spotify_api:get_audio_features:120 - Error getting audio features for 0t2Y8BKBhtHQTOW7nzyIc0: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=0t2Y8BKBhtHQTOW7nzyIc0:
+ None, reason: None
+2025-07-07 20:04:27.021 | WARNING  | __main__:sort_liked_songs:94 - No features found for FKN Movie - skipping.
+2025-07-07 20:04:27.021 | DEBUG    | __main__:sort_liked_songs:89 - Processing track 3/20: Beer For Breakfast by Zach Top
+2025-07-07 20:04:27.066 | ERROR    | spotify_api:get_audio_features:120 - Error getting audio features for 2HbNfSh9KzbXUHAchtu0VO: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=2HbNfSh9KzbXUHAchtu0VO:
+ None, reason: None
+2025-07-07 20:04:27.066 | WARNING  | __main__:sort_liked_songs:94 - No features found for Beer For Breakfast - skipping.
+2025-07-07 20:04:27.066 | DEBUG    | __main__:sort_liked_songs:89 - Processing track 4/20: I Never Lie by Zach Top
+2025-07-07 20:04:27.106 | ERROR    | spotify_api:get_audio_features:120 - Error getting audio features for 3t6gUcGYLrUuqwpXjOFWQc: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=3t6gUcGYLrUuqwpXjOFWQc:
+ None, reason: None
+2025-07-07 20:04:27.107 | WARNING  | __main__:sort_liked_songs:94 - No features found for I Never Lie - skipping.
+2025-07-07 20:04:27.107 | DEBUG    | __main__:sort_liked_songs:89 - Processing track 5/20: 1-800 by bbno$, Ironmouse
+2025-07-07 20:04:27.146 | ERROR    | spotify_api:get_audio_features:120 - Error getting audio features for 6NBZu27n3cxEk4y4c2Kxi8: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=6NBZu27n3cxEk4y4c2Kxi8:
+ None, reason: None
+2025-07-07 20:04:27.146 | WARNING  | __main__:sort_liked_songs:94 - No features found for 1-800 - skipping.
+2025-07-07 20:04:27.147 | DEBUG    | __main__:sort_liked_songs:89 - Processing track 6/20: Hecha Pa' Mí by Grupo Frontera
+2025-07-07 20:04:27.197 | ERROR    | spotify_api:get_audio_features:120 - Error getting audio features for 1uGUbgZuO1kD1JZ0UeFupN: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=1uGUbgZuO1kD1JZ0UeFupN:
+ None, reason: None
+2025-07-07 20:04:27.197 | WARNING  | __main__:sort_liked_songs:94 - No features found for Hecha Pa' Mí - skipping.
+2025-07-07 20:04:27.198 | DEBUG    | __main__:sort_liked_songs:89 - Processing track 7/20: Questo amore è un motore by Pino D'Angiò
+2025-07-07 20:04:27.240 | ERROR    | spotify_api:get_audio_features:120 - Error getting audio features for 6hob5XGGteZCcJZQoK06Fr: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=6hob5XGGteZCcJZQoK06Fr:
+ None, reason: None
+2025-07-07 20:04:27.241 | WARNING  | __main__:sort_liked_songs:94 - No features found for Questo amore è un motore - skipping.
+2025-07-07 20:04:27.241 | DEBUG    | __main__:sort_liked_songs:89 - Processing track 8/20: Ma quale idea by Pino D'Angiò
+2025-07-07 20:04:27.283 | ERROR    | spotify_api:get_audio_features:120 - Error getting audio features for 50f0mt35cIwwu3Krk7nS7b: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=50f0mt35cIwwu3Krk7nS7b:
+ None, reason: None
+2025-07-07 20:04:27.283 | WARNING  | __main__:sort_liked_songs:94 - No features found for Ma quale idea - skipping.
+2025-07-07 20:04:27.283 | DEBUG    | __main__:sort_liked_songs:89 - Processing track 9/20: Okay Okay by Pino D'Angiò
+2025-07-07 20:04:27.324 | ERROR    | spotify_api:get_audio_features:120 - Error getting audio features for 6W0PqAtbW7fkTRBtmwOwfM: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=6W0PqAtbW7fkTRBtmwOwfM:
+ None, reason: None
+2025-07-07 20:04:27.324 | WARNING  | __main__:sort_liked_songs:94 - No features found for Okay Okay - skipping.
+2025-07-07 20:04:27.325 | DEBUG    | __main__:sort_liked_songs:89 - Processing track 10/20: Connected by Juicce
+2025-07-07 20:04:27.367 | ERROR    | spotify_api:get_audio_features:120 - Error getting audio features for 0vEG1losSiPHkoL6GQrG9x: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=0vEG1losSiPHkoL6GQrG9x:
+ None, reason: None
+2025-07-07 20:04:27.368 | WARNING  | __main__:sort_liked_songs:94 - No features found for Connected - skipping.
+2025-07-07 20:04:27.368 | DEBUG    | __main__:sort_liked_songs:89 - Processing track 11/20: U Lyk My Style by Stacy N.K.R
+2025-07-07 20:04:27.407 | ERROR    | spotify_api:get_audio_features:120 - Error getting audio features for 0QlmR1LoIFAyYJKWUFYAeH: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=0QlmR1LoIFAyYJKWUFYAeH:
+ None, reason: None
+2025-07-07 20:04:27.407 | WARNING  | __main__:sort_liked_songs:94 - No features found for U Lyk My Style - skipping.
+2025-07-07 20:04:27.407 | DEBUG    | __main__:sort_liked_songs:89 - Processing track 12/20: Pressure by GENESI, Laherte
+2025-07-07 20:04:27.454 | ERROR    | spotify_api:get_audio_features:120 - Error getting audio features for 3wdOS1vNOk05bJyV83etSd: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=3wdOS1vNOk05bJyV83etSd:
+ None, reason: None
+2025-07-07 20:04:27.454 | WARNING  | __main__:sort_liked_songs:94 - No features found for Pressure - skipping.
+2025-07-07 20:04:27.454 | DEBUG    | __main__:sort_liked_songs:89 - Processing track 13/20: D&G by Claudia Valentina
+2025-07-07 20:04:27.494 | ERROR    | spotify_api:get_audio_features:120 - Error getting audio features for 6SqA0ketFw8TP6H6dhIjk3: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=6SqA0ketFw8TP6H6dhIjk3:
+ None, reason: None
+2025-07-07 20:04:27.496 | WARNING  | __main__:sort_liked_songs:94 - No features found for D&G - skipping.
+2025-07-07 20:04:27.496 | DEBUG    | __main__:sort_liked_songs:89 - Processing track 14/20: Velocidad a tope by Pol Granch
+2025-07-07 20:04:27.536 | ERROR    | spotify_api:get_audio_features:120 - Error getting audio features for 4rV2AqnPzSNMgU7cZc15pz: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4rV2AqnPzSNMgU7cZc15pz:
+ None, reason: None
+2025-07-07 20:04:27.536 | WARNING  | __main__:sort_liked_songs:94 - No features found for Velocidad a tope - skipping.
+2025-07-07 20:04:27.537 | DEBUG    | __main__:sort_liked_songs:89 - Processing track 15/20: No Te Bastó, Mi Corazón by Pol Granch
+2025-07-07 20:04:27.582 | ERROR    | spotify_api:get_audio_features:120 - Error getting audio features for 0m3CRhpTpfe3tlacqTKvig: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=0m3CRhpTpfe3tlacqTKvig:
+ None, reason: None
+2025-07-07 20:04:27.582 | WARNING  | __main__:sort_liked_songs:94 - No features found for No Te Bastó, Mi Corazón - skipping.
+2025-07-07 20:04:27.582 | DEBUG    | __main__:sort_liked_songs:89 - Processing track 16/20: Candy by Claudia Valentina
+2025-07-07 20:04:27.625 | ERROR    | spotify_api:get_audio_features:120 - Error getting audio features for 31tp6dG3by6hyHfICBsqG9: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=31tp6dG3by6hyHfICBsqG9:
+ None, reason: None
+2025-07-07 20:04:27.625 | WARNING  | __main__:sort_liked_songs:94 - No features found for Candy - skipping.
+2025-07-07 20:04:27.625 | DEBUG    | __main__:sort_liked_songs:89 - Processing track 17/20: STARTAFIGHT by Joey Valence & Brae
+2025-07-07 20:04:27.680 | ERROR    | spotify_api:get_audio_features:120 - Error getting audio features for 0MnJ73xPk7rQDw0lIu8kBh: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=0MnJ73xPk7rQDw0lIu8kBh:
+ None, reason: None
+2025-07-07 20:04:27.681 | WARNING  | __main__:sort_liked_songs:94 - No features found for STARTAFIGHT - skipping.
+2025-07-07 20:04:27.681 | DEBUG    | __main__:sort_liked_songs:89 - Processing track 18/20: UPS / DOWNS by Pertinence
+2025-07-07 20:04:27.729 | ERROR    | spotify_api:get_audio_features:120 - Error getting audio features for 7Hrl1YZUL9se4VGbN24hH5: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=7Hrl1YZUL9se4VGbN24hH5:
+ None, reason: None
+2025-07-07 20:04:27.730 | WARNING  | __main__:sort_liked_songs:94 - No features found for UPS / DOWNS - skipping.
+2025-07-07 20:04:27.730 | DEBUG    | __main__:sort_liked_songs:89 - Processing track 19/20: Goodness Gracious by BABY GRAVY, Yung Gravy, bbno$
+2025-07-07 20:04:27.774 | ERROR    | spotify_api:get_audio_features:120 - Error getting audio features for 3FwzAQ2kVYHhaACqh79trJ: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=3FwzAQ2kVYHhaACqh79trJ:
+ None, reason: None
+2025-07-07 20:04:27.774 | WARNING  | __main__:sort_liked_songs:94 - No features found for Goodness Gracious - skipping.
+2025-07-07 20:04:27.774 | DEBUG    | __main__:sort_liked_songs:89 - Processing track 20/20: THE BADDEST (BADDER) [feat. Ayesha Erotica] by Joey Valence & Brae, Ayesha Erotica
+2025-07-07 20:04:27.822 | ERROR    | spotify_api:get_audio_features:120 - Error getting audio features for 4IbD6fckUgj1qrC2U5VGem: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4IbD6fckUgj1qrC2U5VGem:
+ None, reason: None
+2025-07-07 20:04:27.822 | WARNING  | __main__:sort_liked_songs:94 - No features found for THE BADDEST (BADDER) [feat. Ayesha Erotica] - skipping.
+2025-07-07 20:04:27.822 | INFO     | __main__:sort_liked_songs:130 - Sorting complete: 0 processed, 20 errors
+2025-07-07 20:04:30.561 | INFO     | __main__:index:11 - Index page accessed
+2025-07-07 20:04:40.511 | INFO     | __main__:status:51 - Status check - User: edwiin00
+2025-07-07 20:04:40.512 | INFO     | __main__:status:52 - Granted scopes: user-library-read playlist-modify-private playlist-modify-public user-read-private
+2025-07-07 20:04:40.512 | INFO     | __main__:status:53 - Audio features test: ❌ Audio features error: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:13:19.528 | INFO     | __main__:<module>:284 - Starting Flask app
+2025-07-07 20:20:22.616 | INFO     | __main__:<module>:326 - Starting Flask app
+2025-07-07 20:20:24.480 | INFO     | __main__:<module>:326 - Starting Flask app
+2025-07-07 20:20:25.330 | INFO     | __main__:index:11 - Index page accessed
+2025-07-07 20:20:29.157 | INFO     | spotify_api:clear_token_cache:58 - Token cache cleared. Please re-authenticate.
+2025-07-07 20:20:33.593 | INFO     | spotify_api:test_audio_features_access:181 - Testing audio features access with track: 4iV5W9uYEdYUVa79Axb7Rh
+2025-07-07 20:20:33.657 | INFO     | spotify_api:test_audio_features_access:185 - Track found: Prelude for Piano No. 11 in F-Sharp Minor by Eduard Abramyan
+2025-07-07 20:20:33.695 | ERROR    | spotify_api:test_audio_features_access:199 - ❌ Audio features test failed: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:20:33.696 | INFO     | __main__:status:96 - Status check - User: edwiin00
+2025-07-07 20:20:33.696 | INFO     | __main__:status:97 - Granted scopes: user-library-read playlist-modify-private playlist-modify-public user-read-private user-read-playback-state user-read-recently-played
+2025-07-07 20:20:33.696 | INFO     | __main__:status:98 - Audio features test: ❌ Audio features access failed
+2025-07-07 20:20:38.971 | INFO     | __main__:index:11 - Index page accessed
+2025-07-07 20:20:42.282 | INFO     | spotify_api:test_audio_features_access:181 - Testing audio features access with track: 4iV5W9uYEdYUVa79Axb7Rh
+2025-07-07 20:20:42.345 | INFO     | spotify_api:test_audio_features_access:185 - Track found: Prelude for Piano No. 11 in F-Sharp Minor by Eduard Abramyan
+2025-07-07 20:20:42.384 | ERROR    | spotify_api:test_audio_features_access:199 - ❌ Audio features test failed: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:20:47.276 | INFO     | spotify_api:test_audio_features_access:181 - Testing audio features access with track: 4iV5W9uYEdYUVa79Axb7Rh
+2025-07-07 20:20:47.372 | INFO     | spotify_api:test_audio_features_access:185 - Track found: Prelude for Piano No. 11 in F-Sharp Minor by Eduard Abramyan
+2025-07-07 20:20:47.410 | ERROR    | spotify_api:test_audio_features_access:199 - ❌ Audio features test failed: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:20:52.618 | INFO     | spotify_api:clear_token_cache:58 - Token cache cleared. Please re-authenticate.
+2025-07-07 20:20:56.372 | INFO     | spotify_api:test_audio_features_access:181 - Testing audio features access with track: 4iV5W9uYEdYUVa79Axb7Rh
+2025-07-07 20:20:56.464 | INFO     | spotify_api:test_audio_features_access:185 - Track found: Prelude for Piano No. 11 in F-Sharp Minor by Eduard Abramyan
+2025-07-07 20:20:56.551 | ERROR    | spotify_api:test_audio_features_access:199 - ❌ Audio features test failed: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:20:56.552 | INFO     | __main__:status:96 - Status check - User: edwiin00
+2025-07-07 20:20:56.552 | INFO     | __main__:status:97 - Granted scopes: user-library-read playlist-modify-private playlist-modify-public user-read-private user-read-playback-state user-read-recently-played
+2025-07-07 20:20:56.552 | INFO     | __main__:status:98 - Audio features test: ❌ Audio features access failed
+2025-07-07 20:21:11.165 | INFO     | __main__:index:11 - Index page accessed
+2025-07-07 20:21:12.573 | INFO     | __main__:sort_liked_songs:111 - Starting /sort route
+2025-07-07 20:21:12.642 | INFO     | __main__:sort_liked_songs:116 - Processing for user: edwiin00
+2025-07-07 20:21:12.642 | INFO     | __main__:sort_liked_songs:119 - Fetching liked tracks...
+2025-07-07 20:21:12.642 | DEBUG    | spotify_api:get_liked_tracks:80 - Fetching liked tracks batch: offset=0
+2025-07-07 20:21:13.179 | INFO     | spotify_api:get_liked_tracks:107 - Fetched 20 liked tracks
+2025-07-07 20:21:13.180 | INFO     | __main__:sort_liked_songs:126 - Found 20 liked tracks to process
+2025-07-07 20:21:13.180 | DEBUG    | __main__:sort_liked_songs:134 - Processing track 1/20: LET'S GO by Jaden Bojsen, Sami Brielle
+2025-07-07 20:21:13.181 | DEBUG    | spotify_api:get_audio_features:125 - Fetching audio features for track: 20Y4EAmSXru3foatDg4OqN
+2025-07-07 20:21:13.221 | ERROR    | spotify_api:get_audio_features:136 - Error getting audio features for 20Y4EAmSXru3foatDg4OqN: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=20Y4EAmSXru3foatDg4OqN:
+ None, reason: None
+2025-07-07 20:21:13.222 | ERROR    | spotify_api:get_audio_features:138 - Exception type: SpotifyException
+2025-07-07 20:21:13.223 | ERROR    | spotify_api:get_audio_features:139 - Exception args: (403, -1, 'https://api.spotify.com/v1/audio-features/?ids=20Y4EAmSXru3foatDg4OqN:\n None')
+2025-07-07 20:21:13.223 | WARNING  | __main__:sort_liked_songs:139 - No features found for LET'S GO - skipping.
+2025-07-07 20:21:13.224 | DEBUG    | __main__:sort_liked_songs:134 - Processing track 2/20: FKN Movie by KAROL G, Mariah Angeliq
+2025-07-07 20:21:13.224 | DEBUG    | spotify_api:get_audio_features:125 - Fetching audio features for track: 0t2Y8BKBhtHQTOW7nzyIc0
+2025-07-07 20:21:13.263 | ERROR    | spotify_api:get_audio_features:136 - Error getting audio features for 0t2Y8BKBhtHQTOW7nzyIc0: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=0t2Y8BKBhtHQTOW7nzyIc0:
+ None, reason: None
+2025-07-07 20:21:13.264 | ERROR    | spotify_api:get_audio_features:138 - Exception type: SpotifyException
+2025-07-07 20:21:13.264 | ERROR    | spotify_api:get_audio_features:139 - Exception args: (403, -1, 'https://api.spotify.com/v1/audio-features/?ids=0t2Y8BKBhtHQTOW7nzyIc0:\n None')
+2025-07-07 20:21:13.265 | WARNING  | __main__:sort_liked_songs:139 - No features found for FKN Movie - skipping.
+2025-07-07 20:21:13.265 | DEBUG    | __main__:sort_liked_songs:134 - Processing track 3/20: Beer For Breakfast by Zach Top
+2025-07-07 20:21:13.266 | DEBUG    | spotify_api:get_audio_features:125 - Fetching audio features for track: 2HbNfSh9KzbXUHAchtu0VO
+2025-07-07 20:21:13.301 | ERROR    | spotify_api:get_audio_features:136 - Error getting audio features for 2HbNfSh9KzbXUHAchtu0VO: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=2HbNfSh9KzbXUHAchtu0VO:
+ None, reason: None
+2025-07-07 20:21:13.302 | ERROR    | spotify_api:get_audio_features:138 - Exception type: SpotifyException
+2025-07-07 20:21:13.302 | ERROR    | spotify_api:get_audio_features:139 - Exception args: (403, -1, 'https://api.spotify.com/v1/audio-features/?ids=2HbNfSh9KzbXUHAchtu0VO:\n None')
+2025-07-07 20:21:13.303 | WARNING  | __main__:sort_liked_songs:139 - No features found for Beer For Breakfast - skipping.
+2025-07-07 20:21:13.303 | DEBUG    | __main__:sort_liked_songs:134 - Processing track 4/20: I Never Lie by Zach Top
+2025-07-07 20:21:13.303 | DEBUG    | spotify_api:get_audio_features:125 - Fetching audio features for track: 3t6gUcGYLrUuqwpXjOFWQc
+2025-07-07 20:21:13.340 | ERROR    | spotify_api:get_audio_features:136 - Error getting audio features for 3t6gUcGYLrUuqwpXjOFWQc: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=3t6gUcGYLrUuqwpXjOFWQc:
+ None, reason: None
+2025-07-07 20:21:13.340 | ERROR    | spotify_api:get_audio_features:138 - Exception type: SpotifyException
+2025-07-07 20:21:13.340 | ERROR    | spotify_api:get_audio_features:139 - Exception args: (403, -1, 'https://api.spotify.com/v1/audio-features/?ids=3t6gUcGYLrUuqwpXjOFWQc:\n None')
+2025-07-07 20:21:13.342 | WARNING  | __main__:sort_liked_songs:139 - No features found for I Never Lie - skipping.
+2025-07-07 20:21:13.342 | DEBUG    | __main__:sort_liked_songs:134 - Processing track 5/20: 1-800 by bbno$, Ironmouse
+2025-07-07 20:21:13.342 | DEBUG    | spotify_api:get_audio_features:125 - Fetching audio features for track: 6NBZu27n3cxEk4y4c2Kxi8
+2025-07-07 20:21:13.380 | ERROR    | spotify_api:get_audio_features:136 - Error getting audio features for 6NBZu27n3cxEk4y4c2Kxi8: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=6NBZu27n3cxEk4y4c2Kxi8:
+ None, reason: None
+2025-07-07 20:21:13.380 | ERROR    | spotify_api:get_audio_features:138 - Exception type: SpotifyException
+2025-07-07 20:21:13.381 | ERROR    | spotify_api:get_audio_features:139 - Exception args: (403, -1, 'https://api.spotify.com/v1/audio-features/?ids=6NBZu27n3cxEk4y4c2Kxi8:\n None')
+2025-07-07 20:21:13.381 | WARNING  | __main__:sort_liked_songs:139 - No features found for 1-800 - skipping.
+2025-07-07 20:21:13.381 | DEBUG    | __main__:sort_liked_songs:134 - Processing track 6/20: Hecha Pa' Mí by Grupo Frontera
+2025-07-07 20:21:13.382 | DEBUG    | spotify_api:get_audio_features:125 - Fetching audio features for track: 1uGUbgZuO1kD1JZ0UeFupN
+2025-07-07 20:21:13.419 | ERROR    | spotify_api:get_audio_features:136 - Error getting audio features for 1uGUbgZuO1kD1JZ0UeFupN: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=1uGUbgZuO1kD1JZ0UeFupN:
+ None, reason: None
+2025-07-07 20:21:13.419 | ERROR    | spotify_api:get_audio_features:138 - Exception type: SpotifyException
+2025-07-07 20:21:13.419 | ERROR    | spotify_api:get_audio_features:139 - Exception args: (403, -1, 'https://api.spotify.com/v1/audio-features/?ids=1uGUbgZuO1kD1JZ0UeFupN:\n None')
+2025-07-07 20:21:13.419 | WARNING  | __main__:sort_liked_songs:139 - No features found for Hecha Pa' Mí - skipping.
+2025-07-07 20:21:13.419 | DEBUG    | __main__:sort_liked_songs:134 - Processing track 7/20: Questo amore è un motore by Pino D'Angiò
+2025-07-07 20:21:13.420 | DEBUG    | spotify_api:get_audio_features:125 - Fetching audio features for track: 6hob5XGGteZCcJZQoK06Fr
+2025-07-07 20:21:13.455 | ERROR    | spotify_api:get_audio_features:136 - Error getting audio features for 6hob5XGGteZCcJZQoK06Fr: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=6hob5XGGteZCcJZQoK06Fr:
+ None, reason: None
+2025-07-07 20:21:13.455 | ERROR    | spotify_api:get_audio_features:138 - Exception type: SpotifyException
+2025-07-07 20:21:13.455 | ERROR    | spotify_api:get_audio_features:139 - Exception args: (403, -1, 'https://api.spotify.com/v1/audio-features/?ids=6hob5XGGteZCcJZQoK06Fr:\n None')
+2025-07-07 20:21:13.456 | WARNING  | __main__:sort_liked_songs:139 - No features found for Questo amore è un motore - skipping.
+2025-07-07 20:21:13.456 | DEBUG    | __main__:sort_liked_songs:134 - Processing track 8/20: Ma quale idea by Pino D'Angiò
+2025-07-07 20:21:13.456 | DEBUG    | spotify_api:get_audio_features:125 - Fetching audio features for track: 50f0mt35cIwwu3Krk7nS7b
+2025-07-07 20:21:13.492 | ERROR    | spotify_api:get_audio_features:136 - Error getting audio features for 50f0mt35cIwwu3Krk7nS7b: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=50f0mt35cIwwu3Krk7nS7b:
+ None, reason: None
+2025-07-07 20:21:13.492 | ERROR    | spotify_api:get_audio_features:138 - Exception type: SpotifyException
+2025-07-07 20:21:13.493 | ERROR    | spotify_api:get_audio_features:139 - Exception args: (403, -1, 'https://api.spotify.com/v1/audio-features/?ids=50f0mt35cIwwu3Krk7nS7b:\n None')
+2025-07-07 20:21:13.493 | WARNING  | __main__:sort_liked_songs:139 - No features found for Ma quale idea - skipping.
+2025-07-07 20:21:13.493 | DEBUG    | __main__:sort_liked_songs:134 - Processing track 9/20: Okay Okay by Pino D'Angiò
+2025-07-07 20:21:13.493 | DEBUG    | spotify_api:get_audio_features:125 - Fetching audio features for track: 6W0PqAtbW7fkTRBtmwOwfM
+2025-07-07 20:21:13.533 | ERROR    | spotify_api:get_audio_features:136 - Error getting audio features for 6W0PqAtbW7fkTRBtmwOwfM: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=6W0PqAtbW7fkTRBtmwOwfM:
+ None, reason: None
+2025-07-07 20:21:13.533 | ERROR    | spotify_api:get_audio_features:138 - Exception type: SpotifyException
+2025-07-07 20:21:13.534 | ERROR    | spotify_api:get_audio_features:139 - Exception args: (403, -1, 'https://api.spotify.com/v1/audio-features/?ids=6W0PqAtbW7fkTRBtmwOwfM:\n None')
+2025-07-07 20:21:13.534 | WARNING  | __main__:sort_liked_songs:139 - No features found for Okay Okay - skipping.
+2025-07-07 20:21:13.534 | DEBUG    | __main__:sort_liked_songs:134 - Processing track 10/20: Connected by Juicce
+2025-07-07 20:21:13.534 | DEBUG    | spotify_api:get_audio_features:125 - Fetching audio features for track: 0vEG1losSiPHkoL6GQrG9x
+2025-07-07 20:21:13.572 | ERROR    | spotify_api:get_audio_features:136 - Error getting audio features for 0vEG1losSiPHkoL6GQrG9x: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=0vEG1losSiPHkoL6GQrG9x:
+ None, reason: None
+2025-07-07 20:21:13.572 | ERROR    | spotify_api:get_audio_features:138 - Exception type: SpotifyException
+2025-07-07 20:21:13.573 | ERROR    | spotify_api:get_audio_features:139 - Exception args: (403, -1, 'https://api.spotify.com/v1/audio-features/?ids=0vEG1losSiPHkoL6GQrG9x:\n None')
+2025-07-07 20:21:13.573 | WARNING  | __main__:sort_liked_songs:139 - No features found for Connected - skipping.
+2025-07-07 20:21:13.573 | DEBUG    | __main__:sort_liked_songs:134 - Processing track 11/20: U Lyk My Style by Stacy N.K.R
+2025-07-07 20:21:13.573 | DEBUG    | spotify_api:get_audio_features:125 - Fetching audio features for track: 0QlmR1LoIFAyYJKWUFYAeH
+2025-07-07 20:21:13.612 | ERROR    | spotify_api:get_audio_features:136 - Error getting audio features for 0QlmR1LoIFAyYJKWUFYAeH: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=0QlmR1LoIFAyYJKWUFYAeH:
+ None, reason: None
+2025-07-07 20:21:13.613 | ERROR    | spotify_api:get_audio_features:138 - Exception type: SpotifyException
+2025-07-07 20:21:13.613 | ERROR    | spotify_api:get_audio_features:139 - Exception args: (403, -1, 'https://api.spotify.com/v1/audio-features/?ids=0QlmR1LoIFAyYJKWUFYAeH:\n None')
+2025-07-07 20:21:13.613 | WARNING  | __main__:sort_liked_songs:139 - No features found for U Lyk My Style - skipping.
+2025-07-07 20:21:13.613 | DEBUG    | __main__:sort_liked_songs:134 - Processing track 12/20: Pressure by GENESI, Laherte
+2025-07-07 20:21:13.613 | DEBUG    | spotify_api:get_audio_features:125 - Fetching audio features for track: 3wdOS1vNOk05bJyV83etSd
+2025-07-07 20:21:13.655 | ERROR    | spotify_api:get_audio_features:136 - Error getting audio features for 3wdOS1vNOk05bJyV83etSd: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=3wdOS1vNOk05bJyV83etSd:
+ None, reason: None
+2025-07-07 20:21:13.655 | ERROR    | spotify_api:get_audio_features:138 - Exception type: SpotifyException
+2025-07-07 20:21:13.655 | ERROR    | spotify_api:get_audio_features:139 - Exception args: (403, -1, 'https://api.spotify.com/v1/audio-features/?ids=3wdOS1vNOk05bJyV83etSd:\n None')
+2025-07-07 20:21:13.655 | WARNING  | __main__:sort_liked_songs:139 - No features found for Pressure - skipping.
+2025-07-07 20:21:13.655 | DEBUG    | __main__:sort_liked_songs:134 - Processing track 13/20: D&G by Claudia Valentina
+2025-07-07 20:21:13.656 | DEBUG    | spotify_api:get_audio_features:125 - Fetching audio features for track: 6SqA0ketFw8TP6H6dhIjk3
+2025-07-07 20:21:13.696 | ERROR    | spotify_api:get_audio_features:136 - Error getting audio features for 6SqA0ketFw8TP6H6dhIjk3: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=6SqA0ketFw8TP6H6dhIjk3:
+ None, reason: None
+2025-07-07 20:21:13.696 | ERROR    | spotify_api:get_audio_features:138 - Exception type: SpotifyException
+2025-07-07 20:21:13.697 | ERROR    | spotify_api:get_audio_features:139 - Exception args: (403, -1, 'https://api.spotify.com/v1/audio-features/?ids=6SqA0ketFw8TP6H6dhIjk3:\n None')
+2025-07-07 20:21:13.698 | WARNING  | __main__:sort_liked_songs:139 - No features found for D&G - skipping.
+2025-07-07 20:21:13.699 | DEBUG    | __main__:sort_liked_songs:134 - Processing track 14/20: Velocidad a tope by Pol Granch
+2025-07-07 20:21:13.700 | DEBUG    | spotify_api:get_audio_features:125 - Fetching audio features for track: 4rV2AqnPzSNMgU7cZc15pz
+2025-07-07 20:21:13.742 | ERROR    | spotify_api:get_audio_features:136 - Error getting audio features for 4rV2AqnPzSNMgU7cZc15pz: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4rV2AqnPzSNMgU7cZc15pz:
+ None, reason: None
+2025-07-07 20:21:13.742 | ERROR    | spotify_api:get_audio_features:138 - Exception type: SpotifyException
+2025-07-07 20:21:13.743 | ERROR    | spotify_api:get_audio_features:139 - Exception args: (403, -1, 'https://api.spotify.com/v1/audio-features/?ids=4rV2AqnPzSNMgU7cZc15pz:\n None')
+2025-07-07 20:21:13.743 | WARNING  | __main__:sort_liked_songs:139 - No features found for Velocidad a tope - skipping.
+2025-07-07 20:21:13.743 | DEBUG    | __main__:sort_liked_songs:134 - Processing track 15/20: No Te Bastó, Mi Corazón by Pol Granch
+2025-07-07 20:21:13.744 | DEBUG    | spotify_api:get_audio_features:125 - Fetching audio features for track: 0m3CRhpTpfe3tlacqTKvig
+2025-07-07 20:21:13.783 | ERROR    | spotify_api:get_audio_features:136 - Error getting audio features for 0m3CRhpTpfe3tlacqTKvig: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=0m3CRhpTpfe3tlacqTKvig:
+ None, reason: None
+2025-07-07 20:21:13.784 | ERROR    | spotify_api:get_audio_features:138 - Exception type: SpotifyException
+2025-07-07 20:21:13.785 | ERROR    | spotify_api:get_audio_features:139 - Exception args: (403, -1, 'https://api.spotify.com/v1/audio-features/?ids=0m3CRhpTpfe3tlacqTKvig:\n None')
+2025-07-07 20:21:13.786 | WARNING  | __main__:sort_liked_songs:139 - No features found for No Te Bastó, Mi Corazón - skipping.
+2025-07-07 20:21:13.787 | DEBUG    | __main__:sort_liked_songs:134 - Processing track 16/20: Candy by Claudia Valentina
+2025-07-07 20:21:13.787 | DEBUG    | spotify_api:get_audio_features:125 - Fetching audio features for track: 31tp6dG3by6hyHfICBsqG9
+2025-07-07 20:21:13.831 | ERROR    | spotify_api:get_audio_features:136 - Error getting audio features for 31tp6dG3by6hyHfICBsqG9: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=31tp6dG3by6hyHfICBsqG9:
+ None, reason: None
+2025-07-07 20:21:13.832 | ERROR    | spotify_api:get_audio_features:138 - Exception type: SpotifyException
+2025-07-07 20:21:13.832 | ERROR    | spotify_api:get_audio_features:139 - Exception args: (403, -1, 'https://api.spotify.com/v1/audio-features/?ids=31tp6dG3by6hyHfICBsqG9:\n None')
+2025-07-07 20:21:13.833 | WARNING  | __main__:sort_liked_songs:139 - No features found for Candy - skipping.
+2025-07-07 20:21:13.833 | DEBUG    | __main__:sort_liked_songs:134 - Processing track 17/20: STARTAFIGHT by Joey Valence & Brae
+2025-07-07 20:21:13.833 | DEBUG    | spotify_api:get_audio_features:125 - Fetching audio features for track: 0MnJ73xPk7rQDw0lIu8kBh
+2025-07-07 20:21:13.871 | ERROR    | spotify_api:get_audio_features:136 - Error getting audio features for 0MnJ73xPk7rQDw0lIu8kBh: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=0MnJ73xPk7rQDw0lIu8kBh:
+ None, reason: None
+2025-07-07 20:21:13.871 | ERROR    | spotify_api:get_audio_features:138 - Exception type: SpotifyException
+2025-07-07 20:21:13.872 | ERROR    | spotify_api:get_audio_features:139 - Exception args: (403, -1, 'https://api.spotify.com/v1/audio-features/?ids=0MnJ73xPk7rQDw0lIu8kBh:\n None')
+2025-07-07 20:21:13.872 | WARNING  | __main__:sort_liked_songs:139 - No features found for STARTAFIGHT - skipping.
+2025-07-07 20:21:13.873 | DEBUG    | __main__:sort_liked_songs:134 - Processing track 18/20: UPS / DOWNS by Pertinence
+2025-07-07 20:21:13.873 | DEBUG    | spotify_api:get_audio_features:125 - Fetching audio features for track: 7Hrl1YZUL9se4VGbN24hH5
+2025-07-07 20:21:13.913 | ERROR    | spotify_api:get_audio_features:136 - Error getting audio features for 7Hrl1YZUL9se4VGbN24hH5: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=7Hrl1YZUL9se4VGbN24hH5:
+ None, reason: None
+2025-07-07 20:21:13.913 | ERROR    | spotify_api:get_audio_features:138 - Exception type: SpotifyException
+2025-07-07 20:21:13.914 | ERROR    | spotify_api:get_audio_features:139 - Exception args: (403, -1, 'https://api.spotify.com/v1/audio-features/?ids=7Hrl1YZUL9se4VGbN24hH5:\n None')
+2025-07-07 20:21:13.914 | WARNING  | __main__:sort_liked_songs:139 - No features found for UPS / DOWNS - skipping.
+2025-07-07 20:21:13.914 | DEBUG    | __main__:sort_liked_songs:134 - Processing track 19/20: Goodness Gracious by BABY GRAVY, Yung Gravy, bbno$
+2025-07-07 20:21:13.915 | DEBUG    | spotify_api:get_audio_features:125 - Fetching audio features for track: 3FwzAQ2kVYHhaACqh79trJ
+2025-07-07 20:21:13.953 | ERROR    | spotify_api:get_audio_features:136 - Error getting audio features for 3FwzAQ2kVYHhaACqh79trJ: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=3FwzAQ2kVYHhaACqh79trJ:
+ None, reason: None
+2025-07-07 20:21:13.953 | ERROR    | spotify_api:get_audio_features:138 - Exception type: SpotifyException
+2025-07-07 20:21:13.954 | ERROR    | spotify_api:get_audio_features:139 - Exception args: (403, -1, 'https://api.spotify.com/v1/audio-features/?ids=3FwzAQ2kVYHhaACqh79trJ:\n None')
+2025-07-07 20:21:13.954 | WARNING  | __main__:sort_liked_songs:139 - No features found for Goodness Gracious - skipping.
+2025-07-07 20:21:13.954 | DEBUG    | __main__:sort_liked_songs:134 - Processing track 20/20: THE BADDEST (BADDER) [feat. Ayesha Erotica] by Joey Valence & Brae, Ayesha Erotica
+2025-07-07 20:21:13.954 | DEBUG    | spotify_api:get_audio_features:125 - Fetching audio features for track: 4IbD6fckUgj1qrC2U5VGem
+2025-07-07 20:21:13.991 | ERROR    | spotify_api:get_audio_features:136 - Error getting audio features for 4IbD6fckUgj1qrC2U5VGem: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4IbD6fckUgj1qrC2U5VGem:
+ None, reason: None
+2025-07-07 20:21:13.991 | ERROR    | spotify_api:get_audio_features:138 - Exception type: SpotifyException
+2025-07-07 20:21:13.992 | ERROR    | spotify_api:get_audio_features:139 - Exception args: (403, -1, 'https://api.spotify.com/v1/audio-features/?ids=4IbD6fckUgj1qrC2U5VGem:\n None')
+2025-07-07 20:21:13.992 | WARNING  | __main__:sort_liked_songs:139 - No features found for THE BADDEST (BADDER) [feat. Ayesha Erotica] - skipping.
+2025-07-07 20:21:13.993 | INFO     | __main__:sort_liked_songs:175 - Sorting complete: 0 processed, 20 errors
+2025-07-07 20:21:16.991 | INFO     | __main__:index:11 - Index page accessed
+2025-07-07 20:21:19.470 | INFO     | spotify_api:test_audio_features_access:181 - Testing audio features access with track: 4iV5W9uYEdYUVa79Axb7Rh
+2025-07-07 20:21:19.546 | INFO     | spotify_api:test_audio_features_access:185 - Track found: Prelude for Piano No. 11 in F-Sharp Minor by Eduard Abramyan
+2025-07-07 20:21:19.583 | ERROR    | spotify_api:test_audio_features_access:199 - ❌ Audio features test failed: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:21:52.012 | INFO     | __main__:<module>:326 - Starting Flask app
+2025-07-07 20:21:53.872 | INFO     | __main__:<module>:326 - Starting Flask app
+2025-07-07 20:21:54.015 | INFO     | spotify_api:test_audio_features_access:181 - Testing audio features access with track: 4iV5W9uYEdYUVa79Axb7Rh
+2025-07-07 20:21:54.075 | INFO     | spotify_api:test_audio_features_access:185 - Track found: Prelude for Piano No. 11 in F-Sharp Minor by Eduard Abramyan
+2025-07-07 20:21:54.113 | ERROR    | spotify_api:test_audio_features_access:199 - ❌ Audio features test failed: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:22:00.174 | INFO     | __main__:index:11 - Index page accessed
+2025-07-07 20:22:21.121 | INFO     | spotify_api:test_audio_features_access:181 - Testing audio features access with track: 4iV5W9uYEdYUVa79Axb7Rh
+2025-07-07 20:22:21.193 | INFO     | spotify_api:test_audio_features_access:185 - Track found: Prelude for Piano No. 11 in F-Sharp Minor by Eduard Abramyan
+2025-07-07 20:22:21.235 | ERROR    | spotify_api:test_audio_features_access:199 - ❌ Audio features test failed: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:30:14.217 | INFO     | __main__:<module>:326 - Starting Flask app
+2025-07-07 20:30:16.073 | INFO     | __main__:<module>:326 - Starting Flask app
+2025-07-07 20:30:26.797 | INFO     | __main__:index:11 - Index page accessed
+2025-07-07 20:30:46.576 | INFO     | spotify_api:clear_token_cache:58 - Token cache cleared. Please re-authenticate.
+2025-07-07 20:30:59.478 | INFO     | spotify_api:test_audio_features_access:181 - Testing audio features access with track: 4iV5W9uYEdYUVa79Axb7Rh
+2025-07-07 20:30:59.543 | INFO     | spotify_api:test_audio_features_access:185 - Track found: Prelude for Piano No. 11 in F-Sharp Minor by Eduard Abramyan
+2025-07-07 20:30:59.585 | ERROR    | spotify_api:test_audio_features_access:199 - ❌ Audio features test failed: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:30:59.585 | INFO     | __main__:status:96 - Status check - User: edwiin00
+2025-07-07 20:30:59.585 | INFO     | __main__:status:97 - Granted scopes: user-library-read playlist-modify-private playlist-modify-public user-read-private user-read-playback-state user-read-recently-played
+2025-07-07 20:30:59.585 | INFO     | __main__:status:98 - Audio features test: ❌ Audio features access failed
+2025-07-07 20:31:15.229 | INFO     | __main__:index:11 - Index page accessed
+2025-07-07 20:31:19.368 | INFO     | spotify_api:clear_token_cache:58 - Token cache cleared. Please re-authenticate.
+2025-07-07 20:31:22.683 | INFO     | __main__:index:11 - Index page accessed
+2025-07-07 20:31:24.600 | INFO     | spotify_api:clear_token_cache:60 - No token cache found to clear.
+2025-07-07 20:31:27.591 | INFO     | spotify_api:test_audio_features_access:181 - Testing audio features access with track: 4iV5W9uYEdYUVa79Axb7Rh
+2025-07-07 20:31:27.651 | INFO     | spotify_api:test_audio_features_access:185 - Track found: Prelude for Piano No. 11 in F-Sharp Minor by Eduard Abramyan
+2025-07-07 20:31:27.692 | ERROR    | spotify_api:test_audio_features_access:199 - ❌ Audio features test failed: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:31:27.693 | INFO     | __main__:status:96 - Status check - User: edwiin00
+2025-07-07 20:31:27.693 | INFO     | __main__:status:97 - Granted scopes: user-library-read playlist-modify-private playlist-modify-public user-read-private user-read-playback-state user-read-recently-played
+2025-07-07 20:31:27.693 | INFO     | __main__:status:98 - Audio features test: ❌ Audio features access failed
+2025-07-07 20:31:45.494 | INFO     | spotify_api:test_audio_features_access:181 - Testing audio features access with track: 4iV5W9uYEdYUVa79Axb7Rh
+2025-07-07 20:31:45.572 | INFO     | spotify_api:test_audio_features_access:185 - Track found: Prelude for Piano No. 11 in F-Sharp Minor by Eduard Abramyan
+2025-07-07 20:31:45.617 | ERROR    | spotify_api:test_audio_features_access:199 - ❌ Audio features test failed: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:35:34.886 | INFO     | __main__:<module>:326 - Starting Flask app
+2025-07-07 20:35:36.740 | INFO     | __main__:<module>:326 - Starting Flask app
+2025-07-07 20:35:39.464 | INFO     | __main__:index:11 - Index page accessed
+2025-07-07 20:35:45.656 | INFO     | spotify_api:test_audio_features_access:182 - Testing audio features access with track: 4iV5W9uYEdYUVa79Axb7Rh
+2025-07-07 20:35:45.719 | INFO     | spotify_api:test_audio_features_access:186 - Track found: Prelude for Piano No. 11 in F-Sharp Minor by Eduard Abramyan
+2025-07-07 20:35:45.760 | ERROR    | spotify_api:test_audio_features_access:200 - ❌ Audio features test failed: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:35:45.760 | INFO     | __main__:status:96 - Status check - User: edwiin00
+2025-07-07 20:35:45.761 | INFO     | __main__:status:97 - Granted scopes: user-library-read playlist-modify-private playlist-modify-public user-read-private user-read-playback-state user-read-recently-played
+2025-07-07 20:35:45.761 | INFO     | __main__:status:98 - Audio features test: ❌ Audio features access failed
+2025-07-07 20:35:50.276 | INFO     | spotify_api:test_audio_features_access:182 - Testing audio features access with track: 4iV5W9uYEdYUVa79Axb7Rh
+2025-07-07 20:35:50.338 | INFO     | spotify_api:test_audio_features_access:186 - Track found: Prelude for Piano No. 11 in F-Sharp Minor by Eduard Abramyan
+2025-07-07 20:35:50.376 | ERROR    | spotify_api:test_audio_features_access:200 - ❌ Audio features test failed: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:35:53.275 | INFO     | spotify_api:clear_token_cache:59 - Token cache cleared. Please re-authenticate.
+2025-07-07 20:35:56.374 | INFO     | spotify_api:test_audio_features_access:182 - Testing audio features access with track: 4iV5W9uYEdYUVa79Axb7Rh
+2025-07-07 20:35:56.433 | INFO     | spotify_api:test_audio_features_access:186 - Track found: Prelude for Piano No. 11 in F-Sharp Minor by Eduard Abramyan
+2025-07-07 20:35:56.484 | ERROR    | spotify_api:test_audio_features_access:200 - ❌ Audio features test failed: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:35:56.484 | INFO     | __main__:status:96 - Status check - User: edwiin00
+2025-07-07 20:35:56.484 | INFO     | __main__:status:97 - Granted scopes: user-library-read playlist-modify-private playlist-modify-public user-read-private user-read-playback-state user-read-recently-played
+2025-07-07 20:35:56.484 | INFO     | __main__:status:98 - Audio features test: ❌ Audio features access failed
+2025-07-07 20:36:12.115 | INFO     | __main__:index:11 - Index page accessed
+2025-07-07 20:36:13.746 | INFO     | spotify_api:test_audio_features_access:182 - Testing audio features access with track: 4iV5W9uYEdYUVa79Axb7Rh
+2025-07-07 20:36:13.805 | INFO     | spotify_api:test_audio_features_access:186 - Track found: Prelude for Piano No. 11 in F-Sharp Minor by Eduard Abramyan
+2025-07-07 20:36:13.851 | ERROR    | spotify_api:test_audio_features_access:200 - ❌ Audio features test failed: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:42:07.071 | INFO     | __main__:<module>:326 - Starting Flask app
+2025-07-07 20:42:10.518 | INFO     | __main__:<module>:326 - Starting Flask app
+2025-07-07 20:42:13.857 | INFO     | __main__:index:11 - Index page accessed
+2025-07-07 20:42:18.566 | INFO     | spotify_api:test_audio_features_access:185 - Testing audio features access with track: 4iV5W9uYEdYUVa79Axb7Rh
+2025-07-07 20:42:18.655 | INFO     | spotify_api:test_audio_features_access:189 - Track found: Prelude for Piano No. 11 in F-Sharp Minor by Eduard Abramyan
+2025-07-07 20:42:18.695 | ERROR    | spotify_api:test_audio_features_access:203 - ❌ Audio features test failed: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:42:21.385 | INFO     | spotify_api:clear_token_cache:62 - Token cache cleared. Please re-authenticate.
+2025-07-07 20:42:22.793 | INFO     | spotify_api:test_audio_features_access:185 - Testing audio features access with track: 4iV5W9uYEdYUVa79Axb7Rh
+2025-07-07 20:42:22.864 | INFO     | spotify_api:test_audio_features_access:189 - Track found: Prelude for Piano No. 11 in F-Sharp Minor by Eduard Abramyan
+2025-07-07 20:42:22.906 | ERROR    | spotify_api:test_audio_features_access:203 - ❌ Audio features test failed: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:42:22.907 | INFO     | __main__:status:96 - Status check - User: edwiin00
+2025-07-07 20:42:22.907 | INFO     | __main__:status:97 - Granted scopes: No token found
+2025-07-07 20:42:22.908 | INFO     | __main__:status:98 - Audio features test: ❌ Audio features access failed
+2025-07-07 20:42:29.139 | INFO     | spotify_api:test_audio_features_access:185 - Testing audio features access with track: 4iV5W9uYEdYUVa79Axb7Rh
+2025-07-07 20:42:29.221 | INFO     | spotify_api:test_audio_features_access:189 - Track found: Prelude for Piano No. 11 in F-Sharp Minor by Eduard Abramyan
+2025-07-07 20:42:29.272 | ERROR    | spotify_api:test_audio_features_access:203 - ❌ Audio features test failed: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:42:29.272 | INFO     | __main__:status:96 - Status check - User: edwiin00
+2025-07-07 20:42:29.272 | INFO     | __main__:status:97 - Granted scopes: No token found
+2025-07-07 20:42:29.273 | INFO     | __main__:status:98 - Audio features test: ❌ Audio features access failed
+2025-07-07 20:42:33.892 | INFO     | spotify_api:test_audio_features_access:185 - Testing audio features access with track: 4iV5W9uYEdYUVa79Axb7Rh
+2025-07-07 20:42:33.953 | INFO     | spotify_api:test_audio_features_access:189 - Track found: Prelude for Piano No. 11 in F-Sharp Minor by Eduard Abramyan
+2025-07-07 20:42:33.991 | ERROR    | spotify_api:test_audio_features_access:203 - ❌ Audio features test failed: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:42:51.816 | INFO     | __main__:<module>:326 - Starting Flask app
+2025-07-07 20:42:52.554 | INFO     | spotify_api:test_audio_features_access:182 - Testing audio features access with track: 4iV5W9uYEdYUVa79Axb7Rh
+2025-07-07 20:42:52.621 | INFO     | spotify_api:test_audio_features_access:186 - Track found: Prelude for Piano No. 11 in F-Sharp Minor by Eduard Abramyan
+2025-07-07 20:42:52.669 | ERROR    | spotify_api:test_audio_features_access:200 - ❌ Audio features test failed: http status: 403, code:-1 - https://api.spotify.com/v1/audio-features/?ids=4iV5W9uYEdYUVa79Axb7Rh:
+ None, reason: None
+2025-07-07 20:43:21.058 | INFO     | __main__:<module>:326 - Starting Flask app
