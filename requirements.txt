@@ -5,3 +5,6 @@ pandas==2.2.2
 numpy==1.26.4
 loguru
 python-dotenv
+lightgbm
+matplotlib
+seaborn
