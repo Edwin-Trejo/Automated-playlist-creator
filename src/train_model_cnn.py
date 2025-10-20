@@ -71,10 +71,10 @@ def build_cnn_model(input_shape, num_classes):
         layers.Conv2D(128, (3,3), activation='relu'),
         layers.BatchNormalization(),
         layers.MaxPooling2D((2,2)),
-        layers.Dropout(0.3),
+        layers.Dropout(0.4),
         layers.GlobalAveragePooling2D(),
         layers.Dense(256, activation='relu'),
-        layers.Dropout(0.3),
+        layers.Dropout(0.4),
         layers.Dense(num_classes, activation='softmax')
     ])
 
@@ -104,6 +104,14 @@ if __name__ == "__main__":
     # Split data
     X_train, X_test, y_train, y_test = train_test_split(
         X, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded
+    )
+
+    # === Add Early Stopping ===
+    callback = tf.keras.callbacks.EarlyStopping(
+    monitor='val_accuracy',      # track validation accuracy
+    patience=5,                  # stop after 5 epochs with no improvement
+    restore_best_weights=True,   # rollback to best model
+    verbose=1
     )
 
     # Build and train
