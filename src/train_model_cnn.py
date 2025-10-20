@@ -20,26 +20,37 @@ DURATION = 30  # seconds
 SAMPLES_PER_TRACK = SAMPLE_RATE * DURATION
 
 # === 2. Feature extraction ===
-def extract_features(file_path, n_mels=128):
+def extract_features(file_path, n_mels=128, fixed_frames=640):
     try:
-        y, sr = librosa.load(file_path, duration=DURATION)
+        y, sr = librosa.load(file_path, sr=22050, duration=DURATION)
         mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels)
         mel_db = librosa.power_to_db(mel, ref=np.max)
+
+        # Ensure consistent shape: pad or trim time dimension
+        if mel_db.shape[1] < fixed_frames:
+            pad_width = fixed_frames - mel_db.shape[1]
+            mel_db = np.pad(mel_db, pad_width=((0,0),(0,pad_width)), mode='constant')
+        else:
+            mel_db = mel_db[:, :fixed_frames]
+
         return mel_db
     except Exception as e:
         print(f"Error processing {file_path}: {e}")
         return None
 
+
 # === 3. Load dataset ===
 def load_dataset(data_path):
     X, y = [], []
-    genres = os.listdir(data_path)
+    genres = [g for g in os.listdir(data_path) if os.path.isdir(os.path.join(data_path, g))]
     for genre in genres:
         genre_dir = os.path.join(data_path, genre)
-        if not os.path.isdir(genre_dir):
+        if genre.lower() == "archive":  # skip archive or other folders
             continue
         print(f"Processing genre: {genre}")
         for filename in os.listdir(genre_dir):
+            if not filename.lower().endswith((".wav", ".mp3")):
+                continue  # skip non-audio files
             file_path = os.path.join(genre_dir, filename)
             features = extract_features(file_path)
             if features is not None:
@@ -47,16 +58,22 @@ def load_dataset(data_path):
                 y.append(genre)
     return np.array(X), np.array(y)
 
+
 # === 4. Build CNN model ===
 def build_cnn_model(input_shape, num_classes):
     model = models.Sequential([
         layers.Conv2D(32, (3,3), activation='relu', input_shape=input_shape),
+        layers.BatchNormalization(),
         layers.MaxPooling2D((2,2)),
         layers.Conv2D(64, (3,3), activation='relu'),
+        layers.BatchNormalization(),
         layers.MaxPooling2D((2,2)),
         layers.Conv2D(128, (3,3), activation='relu'),
+        layers.BatchNormalization(),
+        layers.MaxPooling2D((2,2)),
+        layers.Dropout(0.3),
         layers.GlobalAveragePooling2D(),
-        layers.Dense(128, activation='relu'),
+        layers.Dense(256, activation='relu'),
         layers.Dropout(0.3),
         layers.Dense(num_classes, activation='softmax')
     ])
@@ -93,8 +110,8 @@ if __name__ == "__main__":
     model = build_cnn_model(X_train.shape[1:], num_classes)
     history = model.fit(
         X_train, y_train,
-        epochs=30,
-        batch_size=16,
+        epochs=50,
+        batch_size=32,
         validation_data=(X_test, y_test)
     )
 
@@ -104,7 +121,7 @@ if __name__ == "__main__":
 
     # Save model and label encoder
     os.makedirs("../models", exist_ok=True)
-    model.save(MODEL_PATH)
+    model.save("../models/genre_cnn_model.keras", save_format="keras")
     joblib.dump(le, LABEL_ENCODER_PATH)
     print(f"Model saved to {MODEL_PATH}")
     print(f"Label encoder saved to {LABEL_ENCODER_PATH}")

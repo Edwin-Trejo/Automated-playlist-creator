@@ -2,10 +2,11 @@ Flask==2.3.3
 spotipy==2.23.0
 scikit-learn==1.4.2
 pandas==2.2.2
-numpy==1.26.4
+numpy
 loguru
 python-dotenv
 lightgbm
 matplotlib
 seaborn
 librosa
+tensorflow
