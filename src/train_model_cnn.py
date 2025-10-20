@@ -62,6 +62,7 @@ def load_dataset(data_path):
 # === 4. Build CNN model ===
 def build_cnn_model(input_shape, num_classes):
     model = models.Sequential([
+        layers.Input(shape=input_shape),
         layers.Conv2D(32, (3,3), activation='relu', input_shape=input_shape),
         layers.BatchNormalization(),
         layers.MaxPooling2D((2,2)),
@@ -129,7 +130,7 @@ if __name__ == "__main__":
 
     # Save model and label encoder
     os.makedirs("../models", exist_ok=True)
-    model.save("../models/genre_cnn_model.keras", save_format="keras")
+    model.save("../models/genre_cnn_model.keras")
     joblib.dump(le, LABEL_ENCODER_PATH)
     print(f"Model saved to {MODEL_PATH}")
     print(f"Label encoder saved to {LABEL_ENCODER_PATH}")
