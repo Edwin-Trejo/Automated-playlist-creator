@@ -11,9 +11,4 @@ Create a virtual environment to install all requirements from the requirements.t
 ```
 pip install -r requirements.txt
 ```
-After requirements are installed, run the app:
-
-```
-python app.py
-```
 And go to the address http://127.0.0.1:5000
