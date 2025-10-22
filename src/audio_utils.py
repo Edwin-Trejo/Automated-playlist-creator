@@ -23,6 +23,10 @@ def download_audio(preview_url, duration=30):
         # Normalize between -1 and 1
         samples /= np.max(np.abs(samples))
 
+        # Cut or pad to exactly 30 s (22 050 × 30)
+        target_length = 22050 * 30
+        samples = np.pad(samples, (0, max(0, target_length - len(samples))))[:target_length]
+
         # librosa expects sample rate; pydub gives it as audio.frame_rate
         y = samples
         sr = audio.frame_rate
@@ -37,28 +41,28 @@ def download_audio(preview_url, duration=30):
         return None, None
 
 
-def audio_to_mel(y, sr, n_mels=128, n_fft=2048, hop_length=512):
-    """Convert waveform to normalized 128×128 Mel spectrogram."""
+def audio_to_mel(y, sr, n_mels=128, fixed_frames=640):
+    """Convert audio to Mel-spectrogram identical to training preprocessing."""
     if y is None or sr is None:
         return None
 
-    # Generate mel spectrogram (power)
-    mel_spec = librosa.feature.melspectrogram(
-        y=y, sr=sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length
-    )
+    # Resample to 22,050 Hz (if needed)
+    if sr != 22050:
+        y = librosa.resample(y, orig_sr=sr, target_sr=22050)
+        sr = 22050
 
-    # Convert to log scale (dB)
-    mel_spec_db = librosa.power_to_db(mel_spec, ref=np.max)
+    # Generate mel-spectrogram
+    mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels)
+    mel_db = librosa.power_to_db(mel, ref=np.max)
 
-    # Resize to 128×128 for CNN input
-    mel_spec_resized = librosa.util.fix_length(mel_spec_db, size=128, axis=1)
+    # Pad or trim to exactly 640 frames
+    if mel_db.shape[1] < fixed_frames:
+        pad_width = fixed_frames - mel_db.shape[1]
+        mel_db = np.pad(mel_db, pad_width=((0, 0), (0, pad_width)), mode="constant")
+    else:
+        mel_db = mel_db[:, :fixed_frames]
 
-    # Normalize between 0 and 1
-    mel_norm = (mel_spec_resized - mel_spec_resized.min()) / (
-        mel_spec_resized.max() - mel_spec_resized.min()
-    )
+    # Add channel + batch dimension → (1, 128, 640, 1)
+    mel_db = np.expand_dims(mel_db, axis=(0, -1))
 
-    # Expand dimensions → shape (1, 128, 128, 1)
-    mel_norm = np.expand_dims(mel_norm, axis=(0, -1))
-
-    return mel_norm
+    return mel_db

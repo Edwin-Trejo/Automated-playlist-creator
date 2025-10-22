@@ -12,7 +12,7 @@ import numpy as np
 
 # Resolve model paths relative to project root
 base_dir = Path(__file__).resolve().parent.parent
-model_path = base_dir / "models" / "genre_cnn_model.h5"
+model_path = base_dir / "models" / "genre_cnn_model.keras"
 encoder_path = base_dir / "models" / "label_encoder_cnn.pkl"
 
 # Load CNN model and label encoder
@@ -86,35 +86,38 @@ else:
         print("⚠️ Audio processing failed.")
 
 
-# Fetch your 5 most recent liked songs
-# results = sp.current_user_saved_tracks(limit=5)
+#Fetch your 5 most recent liked songs
+results = sp.current_user_saved_tracks(limit=5)
 
-# print("\n🎧 Classifying your 5 most recent liked songs...\n")
+print("\n🎧 Classifying your 5 most recent liked songs...\n")
 
-# for item in results["items"]:
-#     track = item["track"]
-#     name = track["name"]
-#     artist = ", ".join(a["name"] for a in track["artists"])
-#     print(f"🎵 Track: {name} — {artist}")
+for item in results["items"]:
+    track = item["track"]
+    name = track["name"]
+    artist = ", ".join(a["name"] for a in track["artists"])
+    print(f"🎵 Track: {name} — {artist}")
 
-#     # Get preview link from Deezer
-#     preview_url = get_deezer_preview(name, artist)
-#     if not preview_url:
-#         print("❌ No preview found.\n")
-#         continue
+    # Get preview link from Deezer
+    preview_url = get_deezer_preview(name, artist)
+    if not preview_url:
+        print("❌ No preview found.\n")
+        continue
 
-#     print(f"🔗 Preview: {preview_url}")
+    print(f"🔗 Preview: {preview_url}")
 
-#     # Download + process audio
-#     y, sr = download_audio(preview_url)
-#     mel = audio_to_mel(y, sr)
+    # Download + process audio
+    y, sr = download_audio(preview_url)
+    mel = audio_to_mel(y, sr)
 
-#     if mel is None:
-#         print("⚠️ Audio processing failed.\n")
-#         continue
+    if mel is None:
+        print("⚠️ Audio processing failed.\n")
+        continue
 
-#     # Predict genre
-#     preds = model.predict(mel)
-#     genre = le.inverse_transform([np.argmax(preds)])[0]
+    # Predict genre
+    preds = model.predict(mel)
+    confidence = np.max(preds)
 
-#     print(f"✅ Predicted genre: {genre}\n" + "-"*60)
+    genre = le.inverse_transform([np.argmax(preds)])[0]
+
+    #print(f"✅ Predicted genre: {genre}\n" + "-"*60)
+    print(f"✅ Predicted genre: {genre} (confidence: {confidence:.2f})\n" + "-"*60)
