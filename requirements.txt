@@ -11,4 +11,6 @@ seaborn
 librosa
 tensorflow
 requests
-
+soundfile
+pydub 
+ffmpeg-downloader
