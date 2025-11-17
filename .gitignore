@@ -1,3 +1,4 @@
 .env
 .wav
 .cache
+__pycache__/
