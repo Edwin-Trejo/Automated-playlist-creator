@@ -5,19 +5,19 @@ The app connects to the **Spotify Web API** using `Spotipy`, extracts audio feat
 
 ---
 
-## 🚀 Features
+##  Features
 
-- 🔐 **Spotify Authentication:** Securely connects with the user’s Spotify account using OAuth.
-- 🎶 **Audio Feature Extraction:** Uses `Librosa` and Spotify’s API to gather MFCCs, chroma, tempo, and other features.
-- 🧠 **Machine Learning Classification:** Classifies songs by genre using trained **CNN** and **LightGBM** models.
-- 📊 **Data Pipeline:** Handles preprocessing, caching, and feature storage using **SQLite** and **Pandas**.
-- 🌐 **Interactive Web Interface:** Built with **Flask**, **HTML/CSS/JS** for playlist visualization and user control.
-- 💾 **Persistent Caching:** Reduces redundant Spotify API calls by caching preprocessed data.
-- 🧩 **Modular Design:** Cleanly separated modules for ML, backend, and frontend components.
+-  **Spotify Authentication:** Securely connects with the user’s Spotify account using OAuth.
+-  **Audio Feature Extraction:** Uses `Librosa` and Spotify’s API to gather MFCCs, chroma, tempo, and other features.
+-  **Machine Learning Classification:** Classifies songs by genre using trained **CNN** and **LightGBM** models.
+-  **Data Pipeline:** Handles preprocessing, caching, and feature storage using **SQLite** and **Pandas**.
+-  **Interactive Web Interface:** Built with **Flask**, **HTML/CSS/JS** for playlist visualization and user control.
+-  **Persistent Caching:** Reduces redundant Spotify API calls by caching preprocessed data.
+-  **Modular Design:** Cleanly separated modules for ML, backend, and frontend components.
 
 
 
-## 🧰 Tech Stack
+##  Tech Stack
 
 **Languages & Frameworks:**  
 - Python (Flask, Spotipy, TensorFlow, Scikit-learn, LightGBM, Librosa)  
@@ -29,7 +29,7 @@ The app connects to the **Spotify Web API** using `Spotipy`, extracts audio feat
 - GitHub for version control  
 
 
-## 📂 Dataset
+##  Dataset
 
 The models were trained using a combination of public audio genre datasets and Spotify track features, including:
 
