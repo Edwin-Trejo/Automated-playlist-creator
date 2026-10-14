@@ -123,3 +123,11 @@ def test_save_creates_playlist_with_llm_name(env):
 def test_save_requires_tracks(env):
     _, client, _, _ = env
     assert client.post("/playlist/save", json={"mood": "dance", "track_ids": []}).status_code == 400
+
+
+def test_dashboard_renders_controls(env):
+    _, client, store, _ = env
+    seed(store)
+    html = client.get("/").data.decode()
+    for needle in ['id="sync-btn"', 'data-mood="dance"', 'value="disco"', 'id="generate-btn"', "app.js"]:
+        assert needle in html

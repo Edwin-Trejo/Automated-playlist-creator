@@ -1,1 +1,55 @@
-{% extends "base.html" %}{% block content %}<p>{{ counts.analyzed }} analyzed</p>{% endblock %}
+{% extends "base.html" %}
+{% block nav %}<a href="{{ url_for('main.logout') }}">Log out</a>{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="row">
+    <h2>Your library</h2>
+    <button id="sync-btn">Sync liked songs</button>
+  </div>
+  <p id="counts" class="muted">{{ counts.analyzed }} analyzed · {{ counts.no_preview }} without preview</p>
+  <div id="progress" hidden>
+    <progress id="progress-bar" max="1" value="0"></progress>
+    <span id="progress-text" class="muted"></span>
+  </div>
+  <p id="sync-error" class="error" hidden></p>
+</section>
+
+<section class="card">
+  <h2>Mood</h2>
+  <div id="moods" class="chips">
+    {% for m in moods %}<button class="chip" data-mood="{{ m }}">{{ m|title }}</button>{% endfor %}
+  </div>
+
+  <h3>Fine-tune</h3>
+  <div id="sliders"></div>
+
+  <h3>Genres</h3>
+  <div id="genres" class="chips">
+    {% for g in genres %}<label class="chip"><input type="checkbox" value="{{ g }}"> {{ g }}</label>{% endfor %}
+    {% if not genres %}<span class="muted">Sync your library to see genres.</span>{% endif %}
+  </div>
+
+  <div class="row">
+    <label>Songs <input type="number" id="size" min="1" max="100" value="25"></label>
+    <button id="generate-btn" class="primary">Generate</button>
+  </div>
+</section>
+
+<section class="card" id="results" hidden>
+  <div class="row">
+    <h2>Preview</h2>
+    <button id="save-btn" class="primary">Save to Spotify</button>
+  </div>
+  <p id="results-note" class="muted"></p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Song</th><th>Artist</th><th>Genre</th><th>Dance</th><th>Energy</th><th>Valence</th><th>BPM</th><th></th></tr></thead>
+      <tbody id="results-body"></tbody>
+    </table>
+  </div>
+  <div id="save-result"></div>
+</section>
+
+<script>window.APP = {{ app_data|tojson }};</script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+{% endblock %}
