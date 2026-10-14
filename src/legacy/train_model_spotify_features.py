@@ -1,3 +1,4 @@
+# LEGACY: trained on Spotify audio-features, which Spotify no longer serves to new apps (Nov 2024). Kept for reference only.
 # train_model.py
 import pandas as pd
 from lightgbm import LGBMClassifier
