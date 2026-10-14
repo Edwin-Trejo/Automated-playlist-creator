@@ -1,7 +1,7 @@
 import os
 import threading
-from urllib.parse import urlparse
 from dataclasses import dataclass, field
+from urllib.parse import urlparse
 
 import spotipy
 from dotenv import load_dotenv
