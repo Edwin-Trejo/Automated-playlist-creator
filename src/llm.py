@@ -18,13 +18,13 @@ def _clean(text, limit):
 
 def parse_llm_json(text):
     try:
-        data = json.loads(text)
+        data = json.loads(text, strict=False)
     except (TypeError, ValueError):
         match = re.search(r"\{.*\}", text or "", re.DOTALL)
         if not match:
             return None
         try:
-            data = json.loads(match.group(0))
+            data = json.loads(match.group(0), strict=False)
         except ValueError:
             return None
     if not isinstance(data, dict):
