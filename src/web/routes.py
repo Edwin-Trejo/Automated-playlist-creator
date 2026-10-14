@@ -127,7 +127,8 @@ def save_playlist(sp):
     genres = [g for g, _ in Counter(r["genre"] for r in rows if r["genre"]).most_common(3)]
     artists = [a for a, _ in Counter(r["artists"].split(", ")[0] for r in rows).most_common(5)]
     text = _state().llm(body.get("mood"), genres, artists,
-                        base_url=current_app.config["OLLAMA_URL"], model=current_app.config["OLLAMA_MODEL"])
+                        base_url=current_app.config["OLLAMA_URL"], model=current_app.config["OLLAMA_MODEL"],
+                        timeout=current_app.config["OLLAMA_TIMEOUT"])
     try:
         result = create_playlist(sp, text["name"], text["description"], [r["uri"] for r in rows])
     except SpotifyException as exc:

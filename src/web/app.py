@@ -43,6 +43,7 @@ def create_app(test_config=None):
         SECRET_KEY=os.getenv("FLASK_SECRET_KEY") or os.urandom(24).hex(),
         OLLAMA_URL=os.getenv("OLLAMA_URL", "http://localhost:11434"),
         OLLAMA_MODEL=os.getenv("OLLAMA_MODEL", "llama3.2:3b"),
+        OLLAMA_TIMEOUT=int(os.getenv("OLLAMA_TIMEOUT", "120")),  # first call loads the model; can be slow
     )
     if test_config:
         app.config.update(test_config)

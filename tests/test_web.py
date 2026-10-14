@@ -139,3 +139,14 @@ def test_server_port_follows_redirect_uri(monkeypatch):
     assert server_port() == 8888
     monkeypatch.delenv("SPOTIFY_REDIRECT_URI")
     assert server_port() == 5000
+
+
+def test_save_passes_ollama_settings(env):
+    app, client, store, _ = env
+    seed(store)
+    seen = {}
+    app.extensions["playlist"].llm = lambda mood, genres, artists, **kw: seen.update(kw) or {
+        "name": "N", "description": "d", "source": "ollama"}
+    client.post("/playlist/save", json={"mood": "dance", "track_ids": ["t1"]})
+    assert seen["model"] == app.config["OLLAMA_MODEL"]
+    assert seen["timeout"] == app.config["OLLAMA_TIMEOUT"] == 120
