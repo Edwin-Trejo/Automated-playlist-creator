@@ -131,3 +131,11 @@ def test_dashboard_renders_controls(env):
     html = client.get("/").data.decode()
     for needle in ['id="sync-btn"', 'data-mood="dance"', 'value="disco"', 'id="generate-btn"', "app.js"]:
         assert needle in html
+
+
+def test_server_port_follows_redirect_uri(monkeypatch):
+    from src.web.app import server_port
+    monkeypatch.setenv("SPOTIFY_REDIRECT_URI", "http://127.0.0.1:8888/callback")
+    assert server_port() == 8888
+    monkeypatch.delenv("SPOTIFY_REDIRECT_URI")
+    assert server_port() == 5000

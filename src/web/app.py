@@ -1,5 +1,6 @@
 import os
 import threading
+from urllib.parse import urlparse
 from dataclasses import dataclass, field
 
 import spotipy
@@ -12,7 +13,7 @@ from src.config import DB_PATH
 from src.library_sync import SyncProgress
 from src.llm import generate_playlist_text
 from src.ml.analyzer import Analyzer
-from src.spotify_client import make_oauth
+from src.spotify_client import DEFAULT_REDIRECT, make_oauth
 from src.store import TrackStore
 
 
@@ -62,5 +63,11 @@ def create_app(test_config=None):
     return app
 
 
+def server_port():
+    """Serve on the port in SPOTIFY_REDIRECT_URI so the OAuth callback reaches this app."""
+    return urlparse(os.getenv("SPOTIFY_REDIRECT_URI", DEFAULT_REDIRECT)).port or 5000
+
+
 if __name__ == "__main__":
-    create_app().run(host="127.0.0.1", port=5000, debug=False)
+    load_dotenv()
+    create_app().run(host="127.0.0.1", port=server_port(), debug=False)
