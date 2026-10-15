@@ -1,13 +1,16 @@
-import joblib
+import json
+
+import lightgbm as lgb
 import numpy as np
-import pandas as pd
 
-from src.audio.features import SUMMARY_FEATURE_NAMES, mel_spectrogram, summary_vector
+from src.audio.embeddings import FEATURE_NAMES, FeatureExtractor
 from src.config import MODELS_DIR
-from src.ml.mood_model import predict_mood
 
-MODEL_VERSION = "v1"
-TEMPO_INDEX = SUMMARY_FEATURE_NAMES.index("tempo")
+MODEL_VERSION = "v2"  # bump when models change so synced songs get re-analyzed
+TEMPO_INDEX = FEATURE_NAMES.index("tempo")
+MOOD_TARGETS = ("danceability", "energy", "valence", "acousticness")
+REQUIRED_FILES = ("yamnet.onnx", "genre_lgbm.txt", "genre_meta.json", "mood_meta.json",
+                  *(f"mood_{t}.txt" for t in MOOD_TARGETS))
 
 
 class ModelsMissingError(RuntimeError):
@@ -15,53 +18,42 @@ class ModelsMissingError(RuntimeError):
 
 
 class Analyzer:
-    def __init__(self, cnn, cnn_classes, genre_lgbm, mood_bundle):
-        self.cnn = cnn
-        self.cnn_classes = [str(c) for c in cnn_classes]
-        self.genre_lgbm = genre_lgbm
-        self.mood_bundle = mood_bundle
+    """Audio -> YAMNet features -> LightGBM genre classifier + 4 LightGBM mood regressors."""
+
+    def __init__(self, features, genre_model, genres, mood_models):
+        self.features = features
+        self.genre_model = genre_model
+        self.genres = list(genres)
+        self.mood_models = mood_models
 
     @classmethod
     def load(cls, models_dir=MODELS_DIR):
-        required = {
-            "mood_regressors.pkl": "python -m src.training.collect_mood_dataset && python -m src.training.train_mood_models",
-            "genre_cnn_model.keras": "python -m src.training.train_genre_cnn (or notebooks/train_cnn_colab.ipynb)",
-            "label_encoder_cnn.pkl": "python -m src.training.train_genre_cnn",
-        }
-        missing = [f"models/{name} -> run: {cmd}" for name, cmd in required.items() if not (models_dir / name).exists()]
+        missing = [name for name in REQUIRED_FILES if not (models_dir / name).exists()]
         if missing:
-            raise ModelsMissingError("Missing trained models:\n" + "\n".join(missing))
-
-        from tensorflow.keras.models import load_model  # slow import; only when actually serving
-
-        lgbm_path = models_dir / "genre_lgbm_audio.pkl"
+            raise ModelsMissingError(
+                f"Missing in models/: {', '.join(missing)}. Run notebooks/train_models_colab.ipynb in Google Colab "
+                "and unzip playlist_models.zip into models/.")
+        genre_meta = json.loads((models_dir / "genre_meta.json").read_text())
+        mood_meta = json.loads((models_dir / "mood_meta.json").read_text())
+        for meta in (genre_meta, mood_meta):
+            if meta.get("feature_names") != FEATURE_NAMES:
+                raise ModelsMissingError(
+                    "The models in models/ were trained on different features than this app computes. "
+                    "Retrain with notebooks/train_models_colab.ipynb.")
         return cls(
-            cnn=load_model(models_dir / "genre_cnn_model.keras"),
-            cnn_classes=list(joblib.load(models_dir / "label_encoder_cnn.pkl").classes_),
-            genre_lgbm=joblib.load(lgbm_path) if lgbm_path.exists() else None,
-            mood_bundle=joblib.load(models_dir / "mood_regressors.pkl"),
+            features=FeatureExtractor(models_dir / "yamnet.onnx"),
+            genre_model=lgb.Booster(model_file=str(models_dir / "genre_lgbm.txt")),
+            genres=genre_meta["genres"],
+            mood_models={t: lgb.Booster(model_file=str(models_dir / f"mood_{t}.txt")) for t in MOOD_TARGETS},
         )
 
-    def genre_probs(self, y, vec):
-        mel = mel_spectrogram(y)[np.newaxis, ..., np.newaxis]
-        cnn = self.cnn.predict(mel, verbose=0)[0]
-        probs = {c: float(p) for c, p in zip(self.cnn_classes, cnn)}
-        if self.genre_lgbm is not None:
-            X = pd.DataFrame([vec], columns=self.genre_lgbm["feature_names"])
-            lgbm = self.genre_lgbm["model"].predict_proba(X)[0]
-            lgbm_probs = {str(c): float(p) for c, p in zip(self.genre_lgbm["model"].classes_, lgbm)}
-            # Union of classes: a genre one model wasn't trained on still counts via the other.
-            classes = list(dict.fromkeys([*probs, *lgbm_probs]))
-            probs = {c: (probs.get(c, 0.0) + lgbm_probs.get(c, 0.0)) / 2 for c in classes}
-        return probs
-
     def analyze_audio(self, y):
-        vec = summary_vector(y)
-        probs = self.genre_probs(y, vec)
-        genre = max(probs, key=probs.get)
+        vec = self.features(y)[np.newaxis, :]
+        probs = np.asarray(self.genre_model.predict(vec))[0]
+        best = int(np.argmax(probs))
         return {
-            "genre": genre,
-            "genre_conf": round(probs[genre], 4),
-            **predict_mood(self.mood_bundle, vec),
-            "tempo": round(float(vec[TEMPO_INDEX]), 1),
+            "genre": self.genres[best],
+            "genre_conf": round(float(probs[best]), 4),
+            **{t: float(np.clip(np.asarray(m.predict(vec)).ravel()[0], 0.0, 1.0)) for t, m in self.mood_models.items()},
+            "tempo": round(float(vec[0, TEMPO_INDEX]), 1),
         }

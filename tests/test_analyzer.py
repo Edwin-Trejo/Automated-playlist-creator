@@ -1,81 +1,72 @@
+import json
+
 import numpy as np
 import pytest
 
-from src.config import CLIP_SAMPLES
+from src.audio.embeddings import FEATURE_NAMES
 from src.ml import analyzer as an
 
-
-class FakeCNN:
-    def predict(self, x, verbose=0):
-        assert x.shape == (1, 128, 640, 1)
-        return np.array([[0.2, 0.8]])  # classes: jazz, rock
+TEMPO = FEATURE_NAMES.index("tempo")
 
 
-class FakeLGBM:
-    classes_ = np.array(["rock", "jazz"])  # different order on purpose
+def fake_features(y):
+    vec = np.zeros(len(FEATURE_NAMES), dtype=np.float32)
+    vec[TEMPO] = 123.44
+    return vec
 
-    def predict_proba(self, X):
-        return np.array([[0.4, 0.6]])  # rock 0.4, jazz 0.6
 
-
-class FakeRegressor:
-    def __init__(self, value):
-        self.value = value
+class FakeBooster:
+    def __init__(self, out):
+        self.out = np.asarray(out)
+        self.seen = None
 
     def predict(self, X):
-        return np.array([self.value])
+        self.seen = X
+        return self.out
 
 
-MOOD = {
-    "models": {"danceability": FakeRegressor(0.7), "energy": FakeRegressor(1.4),
-               "valence": FakeRegressor(0.3), "acousticness": FakeRegressor(-0.2)},
-    "feature_names": list(an.SUMMARY_FEATURE_NAMES),
-}
+GENRES = ["jazz", "rock", "pop"]
 
 
-@pytest.fixture
-def clip():
-    return (np.random.default_rng(0).random(CLIP_SAMPLES).astype(np.float32) - 0.5)
+def make_analyzer(genre_out=((0.1, 0.7, 0.2),), mood=None):
+    mood = mood or {"danceability": 0.7, "energy": 1.4, "valence": 0.3, "acousticness": -0.2}
+    genre = FakeBooster(genre_out)
+    return an.Analyzer(fake_features, genre, GENRES, {t: FakeBooster([v]) for t, v in mood.items()}), genre
 
 
-def test_ensemble_averages_aligned_probabilities(clip):
-    a = an.Analyzer(FakeCNN(), ["jazz", "rock"], {"model": FakeLGBM(), "classes": ["rock", "jazz"],
-                                                  "feature_names": list(an.SUMMARY_FEATURE_NAMES)}, MOOD)
-    out = a.analyze_audio(clip)
-    # rock = (0.8 + 0.4) / 2 = 0.6 ; jazz = (0.2 + 0.6) / 2 = 0.4
+def test_genre_is_most_likely_class():
+    a, genre = make_analyzer()
+    out = a.analyze_audio(np.zeros(10, dtype=np.float32))
     assert out["genre"] == "rock"
-    assert out["genre_conf"] == pytest.approx(0.6)
+    assert out["genre_conf"] == pytest.approx(0.7)
+    assert genre.seen.shape == (1, len(FEATURE_NAMES))
 
 
-def test_cnn_only_when_lgbm_missing(clip):
-    out = an.Analyzer(FakeCNN(), ["jazz", "rock"], None, MOOD).analyze_audio(clip)
-    assert out["genre"] == "rock" and out["genre_conf"] == pytest.approx(0.8)
-
-
-def test_mood_values_clipped_and_tempo_present(clip):
-    out = an.Analyzer(FakeCNN(), ["jazz", "rock"], None, MOOD).analyze_audio(clip)
-    assert out["energy"] == 1.0 and out["acousticness"] == 0.0 and out["danceability"] == pytest.approx(0.7)
-    assert out["tempo"] >= 0
+def test_mood_values_are_clipped_and_tempo_comes_from_features():
+    a, _ = make_analyzer()
+    out = a.analyze_audio(np.zeros(10, dtype=np.float32))
+    assert out["energy"] == 1.0 and out["acousticness"] == 0.0
+    assert out["danceability"] == pytest.approx(0.7) and out["valence"] == pytest.approx(0.3)
+    assert out["tempo"] == pytest.approx(123.4)
 
 
 def test_load_reports_missing_models(tmp_path):
-    with pytest.raises(an.ModelsMissingError, match="train_mood_models"):
+    with pytest.raises(an.ModelsMissingError, match="train_models_colab"):
         an.Analyzer.load(tmp_path)
 
 
-def test_ensemble_uses_union_of_classes(clip):
-    class JazzLGBM:
-        classes_ = np.array(["jazz", "rock", "blues"])
+def test_load_rejects_models_trained_on_different_features(tmp_path):
+    for name in an.REQUIRED_FILES:
+        (tmp_path / name).write_text("x")
+    for meta in ("genre_meta.json", "mood_meta.json"):
+        (tmp_path / meta).write_text(json.dumps({"feature_names": ["something_else"], "genres": GENRES,
+                                                 "targets": ["energy"]}))
+    with pytest.raises(an.ModelsMissingError, match="features"):
+        an.Analyzer.load(tmp_path)
 
-        def predict_proba(self, X):
-            return np.array([[0.9, 0.1, 0.0]])
 
-    class RockBluesCNN:
-        def predict(self, x, verbose=0):
-            return np.array([[0.6, 0.4]])  # rock, blues
-
-    lgbm = {"model": JazzLGBM(), "classes": ["jazz", "rock", "blues"], "feature_names": list(an.SUMMARY_FEATURE_NAMES)}
-    out = an.Analyzer(RockBluesCNN(), ["rock", "blues"], lgbm, MOOD).analyze_audio(clip)
-    # jazz = (0 + 0.9) / 2 = 0.45 ; rock = (0.6 + 0.1) / 2 = 0.35
-    assert out["genre"] == "jazz"
-    assert out["genre_conf"] == pytest.approx(0.45)
+@pytest.mark.skipif(not (an.MODELS_DIR / "genre_lgbm.txt").exists(), reason="trained models not present")
+def test_load_real_models():
+    a = an.Analyzer.load()
+    assert a.genres == json.loads((an.MODELS_DIR / "genre_meta.json").read_text())["genres"]
+    assert set(a.mood_models) == {"danceability", "energy", "valence", "acousticness"}

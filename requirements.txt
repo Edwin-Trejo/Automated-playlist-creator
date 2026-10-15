@@ -3,13 +3,8 @@ spotipy
 python-dotenv
 requests
 numpy
-pandas==2.2.2
-pyarrow
-scikit-learn==1.4.2
 lightgbm
-joblib
+onnxruntime
 librosa
-pydub
-ffmpeg-downloader
-tensorflow
+soundfile
 pytest

@@ -8,6 +8,6 @@ GTZAN_DIR = DATA_DIR / "genres"
 DATASET_CSV = DATA_DIR / "dataset.csv"
 DB_PATH = DATA_DIR / "app.db"
 
-SAMPLE_RATE = 22050
+SAMPLE_RATE = 16000  # YAMNet input rate; must match notebooks/train_models_colab.ipynb
 CLIP_SECONDS = 30
 CLIP_SAMPLES = SAMPLE_RATE * CLIP_SECONDS
