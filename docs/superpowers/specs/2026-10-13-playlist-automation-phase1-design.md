@@ -11,10 +11,15 @@ Constraints discovered:
 
 ## Agreed scope
 **Phase 1 (this plan):** own trained models only · mood preset buttons (Happy, Sad, Dance, Chill, Energetic) + optional sliders + genre filter · Ollama-generated name/description (template fallback) · save playlist to Spotify. **No free-text box / embeddings.**
-**Phase 2 (later):** ReccoBeats hybrid — ReccoBeats as primary feature source, own models as fallback and benchmarked against it.
+**Phase 2 (later):**
+- ReccoBeats hybrid — ReccoBeats as primary feature source, own models as fallback and benchmarked against it.
+- Modern genre coverage — replace/extend GTZAN's 10 genres (no reggaeton, techno, house, Latin…) by training genre on `dataset.csv`'s Spotify genre labels (114, incl. reggaeton, latin, salsa, techno, house, deep-house, edm, dancehall, k-pop, r-n-b), grouped into ~15–20 broad genres (e.g. Reggaeton/Urbano, Latin, House, Techno, EDM, Hip-Hop, R&B, Pop, Rock, Metal, Jazz, Classical, Country, Reggae, K-pop), ~150–250 songs each via the same Deezer-preview + YAMNet pipeline (optionally keep GTZAN as extra examples). Evaluate with artist-grouped splits; expect a lower headline accuracy than GTZAN but better real-world fit.
+- Dataset lookup — when a liked song exists in `dataset.csv` (match by Spotify `track_id`, fallback normalized name + first artist), use its real Spotify danceability/energy/valence/acousticness directly; run the trained models only for songs not in the dataset. Store which source each value came from.
 **Later:** free-text mood → sentence-transformers embeddings → song-level retrieval.
 
-Runs locally for the user (Spotify dev mode). CNN training via a Colab notebook (free T4 GPU); everything else local.
+Runs locally for the user (Spotify dev mode).
+
+**Revision (2026-10-14): training architecture.** Training moved to one Colab notebook (`notebooks/train_models_colab.ipynb`) that streams all data by link. Features are now a frozen pretrained CNN (YAMNet, ONNX) embedding plus 5 Librosa rhythm/loudness numbers (2,053 per song, 16 kHz audio); genre = LightGBM classifier (81.6% on unseen artists, beat the NN head and the ensemble), mood = 4 LightGBM regressors (R² 0.52–0.69, artist-grouped test). This replaces the from-scratch CNN and 72-feature Librosa vectors described in the Architecture section below; the app no longer depends on TensorFlow.
 
 ## Architecture
 
