@@ -17,6 +17,16 @@ Constraints discovered:
 - Dataset lookup — when a liked song exists in `dataset.csv` (match by Spotify `track_id`, fallback normalized name + first artist), use its real Spotify danceability/energy/valence/acousticness directly; run the trained models only for songs not in the dataset. Store which source each value came from.
 **Later:** free-text mood → sentence-transformers embeddings → song-level retrieval.
 
+**Future work (unsorted, phase TBD — added 2026-10-14):**
+- **Self-hosting on Proxmox, used from phones via Tailscale.** Run the app in a new Proxmox container (LXC) so the user and people they share it with can use it from a phone over Tailscale (or LAN IP). Notes for detailed planning:
+  - *HTTPS for Spotify login:* Spotify only allows plain `http://` redirect URIs for `127.0.0.1`; any other host must be `https://`. Log in through Tailscale's HTTPS address (`tailscale serve` → `https://<machine>.<tailnet>.ts.net/callback`) and add that URI in the Spotify dashboard. Plain LAN-IP access can't complete Spotify login.
+  - *Multiple users:* the app currently keeps one shared library and one sync progress. Store tracks and sync state per Spotify user (e.g. `user_id` in `src/store.py`'s table, per-user progress in `src/web/app.py`'s `AppState`). Development Mode allows up to 5 allow-listed users.
+  - *Production server:* real WSGI server (waitress/gunicorn) as a systemd service; `data/app.db` and `models/` on persistent storage.
+  - *Ollama location:* gemma2:9b needs ~6 GB RAM. Run it in the container or point `OLLAMA_URL` at another tailnet machine; `src/llm.py`'s template fallback keeps the app working without it.
+  - *Phone-friendly UI:* check `src/web/templates/dashboard.html` / `src/web/static/style.css` on small screens.
+- **More (modern) genres** (priority). Same as the Phase 2 "Modern genre coverage" item above; also a prerequisite for "happy reggaeton"-style playlists below.
+- **Mood playlists from an existing playlist.** Let the user pick any of their playlists (not only Liked Songs) as the source, then split or filter it by mood, e.g. a reggaeton playlist → "Happy reggaeton" (high valence/energy) and "Sad reggaeton" (low valence). Reuses `src/library_sync.py`, `src/moods.py` + `src/selector.py` and `src/spotify_client.py`. Needs the `playlist-read-private` scope, a playlist picker in the UI, and `GET /playlists/{id}/items`. Verify first which playlists' items Spotify's Feb 2026 Development Mode lets an app read (possibly only playlists the user owns). Once more genres exist, "mood within genre" from Liked Songs also works through the existing genre filter + mood preset in `select_tracks`.
+
 Runs locally for the user (Spotify dev mode).
 
 **Revision (2026-10-14): training architecture.** Training moved to one Colab notebook (`notebooks/train_models_colab.ipynb`) that streams all data by link. Features are now a frozen pretrained CNN (YAMNet, ONNX) embedding plus 5 Librosa rhythm/loudness numbers (2,053 per song, 16 kHz audio); genre = LightGBM classifier (81.6% on unseen artists, beat the NN head and the ensemble), mood = 4 LightGBM regressors (R² 0.52–0.69, artist-grouped test). This replaces the from-scratch CNN and 72-feature Librosa vectors described in the Architecture section below; the app no longer depends on TensorFlow.

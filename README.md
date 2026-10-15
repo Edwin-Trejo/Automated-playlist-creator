@@ -101,3 +101,6 @@ src/legacy/     the original model trained on Spotify audio-features (reference 
 - **Phase 2:** modern genres. Train genre on Spotify's labels in `dataset.csv` (reggaeton, Latin, techno, house, EDM, K-pop…), grouped into ~15–20 broad genres, instead of only GTZAN's 10.
 - **Phase 2:** dataset lookup. If a liked song is already in `dataset.csv`, use its real Spotify mood scores and only predict the rest.
 - **Later:** free-text mood search ("rainy-day study music") with sentence-transformer embeddings.
+- **Future (phase TBD):** self-host on a Proxmox container and use it from phones over Tailscale (HTTPS login, one library per user).
+- **Future (phase TBD):** more modern genres (priority; see Phase 2 above).
+- **Future (phase TBD):** build mood playlists from any existing playlist, e.g. split a reggaeton playlist into happy and sad.
