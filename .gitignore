@@ -1,4 +1,16 @@
 .env
-.wav
 .cache
+.venv/
+*.wav
 __pycache__/
+.pytest_cache/
+.superpowers/
+
+# GTZAN audio (large, downloaded separately)
+data/genres/
+data/jazz/
+
+# Generated
+data/features/
+data/app.db
+models/*.png

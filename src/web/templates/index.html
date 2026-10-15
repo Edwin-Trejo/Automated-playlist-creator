@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <h1>Playlist Creator</h1>
+  <p>Build playlists from your Liked Songs by mood, energy and genre.</p>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <a class="button primary" href="{{ url_for('main.login') }}">Log in with Spotify</a>
+</section>
+{% endblock %}

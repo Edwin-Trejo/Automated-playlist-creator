@@ -1,3 +1,0 @@
-tensorflow[and-cuda]
-
-# If not install do ffdl install --add-path
