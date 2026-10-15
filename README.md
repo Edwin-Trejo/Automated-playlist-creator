@@ -1,4 +1,4 @@
-# 🎧 Automated Playlist Creator
+# Automated Playlist Creator
 
 A local Flask web app that reads your Spotify **Liked Songs**, analyzes every song with machine-learning models trained for this project, and builds new playlists by **mood, danceability, energy, tempo and genre**. A local LLM (Ollama) names each playlist and writes its description, and the playlist is saved straight to your Spotify account.
 
