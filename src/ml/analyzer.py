@@ -6,7 +6,7 @@ import numpy as np
 from src.audio.embeddings import FEATURE_NAMES, FeatureExtractor
 from src.config import MODELS_DIR
 
-MODEL_VERSION = "v2"  # bump when models change so synced songs get re-analyzed
+MODEL_VERSION = "v3"  # bump when models change so synced songs get re-analyzed
 TEMPO_INDEX = FEATURE_NAMES.index("tempo")
 MOOD_TARGETS = ("danceability", "energy", "valence", "acousticness")
 REQUIRED_FILES = ("yamnet.onnx", "genre_lgbm.txt", "genre_meta.json", "mood_meta.json",
