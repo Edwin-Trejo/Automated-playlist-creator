@@ -4,13 +4,13 @@ from flask import Blueprint, current_app, jsonify, redirect, render_template, re
 from spotipy.cache_handler import FlaskSessionCacheHandler
 from spotipy.exceptions import SpotifyException
 
-from src.library_sync import LibrarySync, SyncProgress, iter_liked_tracks, start_background_sync
+from src.library_sync import LIKED, LibrarySync, SyncProgress, iter_source_tracks, start_background_sync
 from src.ml.analyzer import ModelsMissingError
 from src.moods import FULL_RANGE, MOODS, build_targets
 from src.playlists import playlist_description, playlist_key, playlist_name
 from src.selector import select_tracks
-from src.spotify_client import (add_items, create_playlist, current_user_id, find_playlist, playlist_track_ids,
-                                unique_name, user_playlists)
+from src.spotify_client import (add_items, create_playlist, current_user_id, find_playlist, playlist_size,
+                                playlist_track_ids, readable_playlists, unique_name, user_playlists)
 
 bp = Blueprint("main", __name__)
 TRACK_FIELDS = ("spotify_id", "name", "artists", "genre", "genre_conf", "danceability",
@@ -30,6 +30,14 @@ def _spotify():
     if not auth.validate_token(auth.cache_handler.get_cached_token()):
         return None
     return _state().spotify_factory(auth)
+
+
+def _sources(body):
+    """Source ids from a request body: "liked" and/or playlist ids. None when not given (= all songs)."""
+    sources = body.get("sources")
+    if sources is None:
+        return None
+    return [s for s in sources if isinstance(s, str) and s]
 
 
 def spotify_required(view):
@@ -82,15 +90,37 @@ def sync(sp):
         analyzer = state.get_analyzer()
     except ModelsMissingError as exc:
         return jsonify(error=str(exc)), 503
+    sources = _sources(request.get_json(silent=True) or {}) or [LIKED]
     # Fetch inside the request: the Spotify token lives in the Flask session, which a background thread cannot read.
+    tracks = {}
     try:
-        tracks = list(iter_liked_tracks(sp))
+        for source in sources:
+            source_tracks = list(iter_source_tracks(sp, source))
+            state.store.set_source_tracks(source, [t["spotify_id"] for t in source_tracks])
+            tracks.update((t["spotify_id"], t) for t in source_tracks)
     except SpotifyException as exc:
         return jsonify(error=f"Spotify error: {exc.msg}"), 502
+    tracks = list(tracks.values())
     state.progress = SyncProgress()
     syncer = LibrarySync(state.store, analyzer, find_preview=state.find_preview, download=state.download)
     state.sync_thread = start_background_sync(tracks, syncer, state.progress)
     return jsonify(state.progress.to_dict()), 202
+
+
+@bp.get("/sources")
+@spotify_required
+def sources(sp):
+    """Liked Songs plus the playlists whose songs the app may read (owned or collaborative)."""
+    try:
+        playlists = readable_playlists(user_playlists(sp), current_user_id(sp))
+    except SpotifyException as exc:
+        return jsonify(error=f"Spotify error: {exc.msg}"), 502
+    counts = _state().store.source_counts()
+    out = [{"id": LIKED, "name": "Liked Songs", "size": None}]
+    out += [{"id": p["id"], "name": p.get("name") or "Untitled", "size": playlist_size(p)} for p in playlists]
+    for s in out:
+        s.update(counts.get(s["id"], {"total": 0, "analyzed": 0}))
+    return jsonify(sources=out)
 
 
 @bp.get("/sync/status")
@@ -120,8 +150,8 @@ def generate():
         size = max(1, min(int(body.get("size", 25)), 100))
     except (ValueError, TypeError) as exc:
         return jsonify(error=str(exc)), 400
-    tracks = _state().store.analyzed_tracks()
-    target = {"name": playlist_name(mood, genres), "url": None, "exists": False, "already_in": 0}
+    tracks = _state().store.analyzed_tracks(_sources(body))
+    target ={"name": playlist_name(mood, genres), "url": None, "exists": False, "already_in": 0}
     sp = None if body.get("new_playlist") else _spotify()
     if sp is not None:
         # Adding to the existing playlist: only suggest songs that aren't in it yet.

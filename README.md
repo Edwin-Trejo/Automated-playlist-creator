@@ -1,50 +1,52 @@
 # Automated Playlist Creator
 
-A local Flask web app that reads your Spotify **Liked Songs**, analyzes every song with machine-learning models trained for this project, and builds new playlists by **mood, danceability, energy, tempo and genre**. A local LLM (Ollama) names each playlist and writes its description, and the playlist is saved straight to your Spotify account.
+A local Flask web app that reads your Spotify **Liked Songs and your own playlists**, analyzes every song with machine-learning models trained for this project, and builds playlists by **mood, danceability, energy, tempo and genre**. Each mood gets its own playlist in your Spotify account ("Happy", or "Happy · Reggaeton / Urbano" with a genre filter), and new matching songs are added to it over time.
 
 ## How it works
 
 ```
-Liked Songs (Spotify API)
+Liked Songs + selected playlists (Spotify API)
    │  track name + artist
    ▼
 Deezer 30 s preview (16 kHz)
    ▼
 YAMNet, a pretrained CNN (frozen) ─► 1,024-number embedding every 0.48 s ─┐
 Librosa ─► tempo, loudness, beat strength ────────────────────────────────┴─► 2,053 features per song
-   ├─► LightGBM classifier ──────────► genre (10 GTZAN genres)
+   ├─► LightGBM classifier ──────────► genre (19 broad genres)
    └─► 4 LightGBM regressors ────────► danceability, energy, valence, acousticness
    ▼
-SQLite cache (each song analyzed once)
+SQLite cache (each song analyzed once, remembers which source it came from)
    ▼
-Mood preset + sliders + genre filter ─► selector ─► preview table
+Mood preset + less/more sliders + genre filter ─► selector ─► preview table
    ▼
-Ollama (name + description) ─► new Spotify playlist
+Add new songs to the mood's playlist (or create it)
 ```
 
 - **Why train mood models?** Spotify stopped serving `audio-features` (danceability, energy, valence…) to new apps in Nov 2024. This project re-creates them: `data/dataset.csv` holds Spotify's original scores for ~114k songs, and the models learn to predict those scores from each song's audio.
-- **Transfer learning:** YAMNet (Google, trained on millions of YouTube clips) is used as a frozen feature extractor, the "ears". Only the small LightGBM models on top are trained, which reaches far higher accuracy than training a CNN from scratch on ~1,000 clips.
+- **Transfer learning:** YAMNet (Google, trained on millions of YouTube clips) is used as a frozen feature extractor, the "ears". Only the small LightGBM models on top are trained.
+- **Genres:** Spotify's 114 genre labels in `dataset.csv` are grouped into 19 broad genres (Reggaeton / Urbano, Latin, House, Techno, K-pop / J-pop / C-pop, Rock…) by `data/genre_groups.json`. The genre is used as a filter for mood playlists, so only the broad genres matter.
 
 ## Model results
 
 All scores are on a held-out test set of **artists the models never saw** during training (artist-grouped split).
 
-**Genre:** GTZAN, 999 clips, 10 genres
+**Genre:** 4,955 songs from `dataset.csv`, 19 broad genres
 
-| Model | Test accuracy |
-|---|---|
-| **LightGBM on YAMNet features (used by the app)** | **81.6%** |
-| Neural-network head on YAMNet features | 77.1% |
-| Average of both | 76.5% |
+| Model | Test accuracy | Macro-F1 |
+|---|---|---|
+| **LightGBM on YAMNet features (used by the app)** | **43.8%** | **0.44** |
+| Same, with GTZAN clips added to training | 41.5% | 0.42 |
 
-**Mood:** 4,275 songs from `dataset.csv` with Deezer previews
+Random guessing would get about 5%. Most mistakes are between similar-sounding genres (e.g. House / Techno / EDM). The earlier GTZAN-only model reached 81.6%, but on only 10 very different genres, and it couldn't recognize reggaeton, house, K-pop and others.
+
+**Mood:** 6,211 songs from `dataset.csv` with Deezer previews
 
 | Target | MAE | Baseline MAE (always predict the mean) | R² |
 |---|---|---|---|
-| Danceability | 0.083 | 0.138 | 0.60 |
-| Energy | 0.098 | 0.200 | 0.69 |
-| Valence | 0.145 | 0.221 | 0.52 |
-| Acousticness | 0.133 | 0.282 | 0.67 |
+| Danceability | 0.078 | 0.138 | 0.64 |
+| Energy | 0.090 | 0.198 | 0.75 |
+| Valence | 0.142 | 0.220 | 0.52 |
+| Acousticness | 0.125 | 0.276 | 0.70 |
 
 ## Setup
 
@@ -57,16 +59,16 @@ All scores are on a held-out test set of **artists the models never saw** during
 2. **Spotify app** at https://developer.spotify.com/dashboard
    - Add a redirect URI such as `http://127.0.0.1:5000/callback` (Spotify rejects `localhost`). The app serves on whatever port this URI uses.
    - Development Mode requires the app owner to have Spotify Premium. Other listeners must be added under *User Management* (max 5).
+   - Development Mode only lets the app read songs from playlists you **own or collaborate on**, so playlists you only follow can't be used as sources.
 3. **`.env`**: copy `.env.example` to `.env` and fill in `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REDIRECT_URI` and a random `FLASK_SECRET_KEY`.
-4. **Ollama** (free, local LLM): install from https://ollama.com/download, then `ollama pull llama3.2:3b` (or set `OLLAMA_MODEL` to a model you already have, e.g. `gemma2:9b`). Without Ollama the app still works and uses a default playlist name.
 
 ## Training
 
 The trained models are committed in `models/`, so this is only needed to retrain.
 
 1. Open https://colab.research.google.com, choose **File → Upload notebook**, and pick `notebooks/train_models_colab.ipynb`.
-2. Choose **Runtime → Run all** (a CPU runtime is fine). All data is streamed by link: GTZAN from Hugging Face, `dataset.csv` from this repo, and previews from Deezer. Progress is saved to Google Drive, so a disconnect just resumes. Expect about 1–1.5 h.
-3. Unzip the downloaded `playlist_models.zip` into `models/`.
+2. Choose **Runtime → Run all** (a CPU runtime is fine). All data is streamed by link: `dataset.csv` and `genre_groups.json` from this repo's `main` branch, and previews from Deezer. Progress is saved to Google Drive, so a disconnect just resumes, and songs processed in earlier runs are reused. A first run takes about 1–2 h.
+3. Unzip the downloaded `playlist_models.zip` into `models/`, and bump `MODEL_VERSION` in `src/ml/analyzer.py` so the next sync re-analyzes your songs with the new models.
 
 ## Run
 
@@ -74,7 +76,14 @@ The trained models are committed in `models/`, so this is only needed to retrain
 python -m src.web.app
 ```
 
-Open the redirect URI's host (e.g. http://127.0.0.1:5000), log in with Spotify and click **Sync liked songs**. The first sync analyzes every song once (a few seconds per song); later syncs only process new likes. Then pick a mood, adjust the sliders, **Generate**, and **Save to Spotify**.
+Open the redirect URI's host (e.g. http://127.0.0.1:5000) and log in with Spotify.
+
+1. **Sources:** Liked Songs is selected by default. Check any of your own playlists to use them too, then click **Sync selected**. The first sync analyzes every song once (a few seconds per song); later syncs only process new songs.
+2. **Mood:** pick Happy, Sad, Dance, Chill or Energetic, and optionally a genre.
+3. **Fine-tune (optional):** one slider per feature (danceability, energy, happiness, tempo). The middle keeps the mood as it is; move it toward *less* or *more*.
+4. **Generate**, then **Save**:
+   - By default, songs are **added to your existing playlist for that mood** ("Happy", or "Happy · Rock" with a genre filter). The preview leaves out songs already in it, so only new ones are added. The app remembers the playlist, so renaming it in Spotify is fine; if you delete it, the next save creates a new one.
+   - Check **Create a new playlist** to start a separate one ("Happy (2)"). Future songs are then added to that one.
 
 ## Tests
 
@@ -87,20 +96,20 @@ python -m pytest
 ```
 notebooks/      Colab training notebook (YAMNet features + LightGBM models)
 models/         trained models (yamnet.onnx, genre_lgbm.txt, mood_*.txt, *_meta.json)
+data/           dataset.csv (Spotify scores + genres), genre_groups.json (114 -> 19 genres), app.db (local cache)
 src/audio/      Deezer preview lookup, decoding, YAMNet + Librosa feature extraction
 src/ml/         Analyzer: features -> genre + mood predictions
 src/web/        Flask app, routes, templates, static JS/CSS
-src/store.py    SQLite cache · src/library_sync.py incremental sync
-src/moods.py    mood presets · src/selector.py track ranking · src/llm.py Ollama naming
+src/store.py    SQLite cache (songs, their sources, mood playlists) · src/library_sync.py incremental sync
+src/moods.py    mood presets + sliders · src/selector.py track ranking · src/playlists.py playlist names
+src/spotify_client.py   Spotify login and playlist endpoints
 src/legacy/     the original model trained on Spotify audio-features (reference only)
 ```
 
 ## Roadmap
 
-- **Phase 2:** ReccoBeats hybrid. Use ReccoBeats audio features as the primary source, keep these models as the fallback, and benchmark them against it.
-- **Phase 2:** modern genres. Train genre on Spotify's labels in `dataset.csv` (reggaeton, Latin, techno, house, EDM, K-pop…), grouped into ~15–20 broad genres, instead of only GTZAN's 10.
-- **Phase 2:** dataset lookup. If a liked song is already in `dataset.csv`, use its real Spotify mood scores and only predict the rest.
+- **Next:** self-host on a Proxmox container and use it from phones over Tailscale (HTTPS login, phone-friendly layout; single user first).
+- **Better genres:** merge the genres the model confuses most (e.g. House / Techno / EDM), or add more songs per genre.
+- **Dataset lookup:** if a song is already in `dataset.csv`, use its real Spotify mood scores and only predict the rest.
+- **ReccoBeats hybrid:** use ReccoBeats audio features as the primary source, keep these models as the fallback, and benchmark them against it.
 - **Later:** free-text mood search ("rainy-day study music") with sentence-transformer embeddings.
-- **Future (phase TBD):** self-host on a Proxmox container and use it from phones over Tailscale (HTTPS login, one library per user).
-- **Future (phase TBD):** more modern genres (priority; see Phase 2 above).
-- **Future (phase TBD):** build mood playlists from any existing playlist, e.g. split a reggaeton playlist into happy and sad.

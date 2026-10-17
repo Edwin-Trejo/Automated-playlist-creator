@@ -42,12 +42,13 @@ class FakeSpotify:
         return {"items": [{"track": {"id": "t1", "uri": "spotify:track:t1", "name": "Song", "artists": [{"name": "A"}]}}],
                 "next": None}
 
-    def add_playlist(self, pid, name, items=(), owner="me"):
-        self.playlists[pid] = {"name": name, "owner": owner, "items": list(items)}
+    def add_playlist(self, pid, name, items=(), owner="me", collaborative=False):
+        self.playlists[pid] = {"name": name, "owner": owner, "items": list(items), "collaborative": collaborative}
 
     def _obj(self, pid):
         p = self.playlists[pid]
-        return {"id": pid, "name": p["name"], "owner": {"id": p["owner"]},
+        return {"id": pid, "name": p["name"], "owner": {"id": p["owner"]}, "collaborative": p["collaborative"],
+                "items": {"total": len(p["items"])},
                 "external_urls": {"spotify": f"https://open.spotify.com/playlist/{pid}"}}
 
     def _get(self, url, **params):
@@ -56,7 +57,8 @@ class FakeSpotify:
         if url == "me/playlists":
             return {"items": [self._obj(pid) for pid in self.playlists], "next": None}
         pid = url.split("/")[1]
-        return {"items": [{"item": {"id": t}} for t in self.playlists[pid]["items"]], "next": None}
+        return {"items": [{"item": {"id": t, "uri": f"spotify:track:{t}", "name": f"Song {t}", "artists": [{"name": "A"}]}}
+                          for t in self.playlists[pid]["items"]], "next": None}
 
     def _post(self, url, payload=None):
         self.posts.append((url, payload))
@@ -107,6 +109,39 @@ def test_sync_runs_and_reports_status(env):
     assert status["analyzed"] == 1 and status["running"] is False
     assert status["counts"]["analyzed"] == 1
     assert store.get("t1")["genre"] == "disco"
+
+
+def test_sync_selected_sources_records_membership(env):
+    app, client, store, sp = env
+    sp.add_playlist("mine", "Road trip", items=["t1", "t2"])
+    assert client.post("/sync", json={"sources": ["liked", "mine"]}).status_code == 202
+    app.extensions["playlist"].sync_thread.join(timeout=5)
+    assert client.get("/sync/status").get_json()["analyzed"] == 2  # t1 is in both, analyzed once
+    assert [t["spotify_id"] for t in store.analyzed_tracks(["liked"])] == ["t1"]
+    assert [t["spotify_id"] for t in store.analyzed_tracks(["mine"])] == ["t1", "t2"]
+
+
+def test_sources_lists_liked_and_readable_playlists(env):
+    _, client, store, sp = env
+    sp.add_playlist("mine", "Road trip", items=["t1", "t2"])
+    sp.add_playlist("collab", "Party", owner="friend", collaborative=True)
+    sp.add_playlist("followed", "Top 50", owner="spotify")
+    store.set_source_tracks("mine", ["t1"])
+    data = client.get("/sources").get_json()["sources"]
+    assert [s["id"] for s in data] == ["liked", "mine", "collab"]
+    assert data[1] == {"id": "mine", "name": "Road trip", "size": 2, "total": 1, "analyzed": 0}
+
+
+def test_generate_uses_only_selected_sources(env):
+    _, client, store, _ = env
+    seed(store, "t1")
+    seed(store, "t2")
+    store.set_source_tracks("liked", ["t1"])
+    store.set_source_tracks("mine", ["t2"])
+    ids = lambda srcs: [t["spotify_id"] for t in client.post("/generate", json={"sources": srcs}).get_json()["tracks"]]
+    assert ids(["liked"]) == ["t1"]
+    assert sorted(ids(["liked", "mine"])) == ["t1", "t2"]
+    assert ids([]) == []
 
 
 def test_sync_conflict_while_running(env):

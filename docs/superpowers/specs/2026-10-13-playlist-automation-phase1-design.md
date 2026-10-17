@@ -27,6 +27,12 @@ Constraints discovered:
 - **More (modern) genres** (priority). Same as the Phase 2 "Modern genre coverage" item above; also a prerequisite for "happy reggaeton"-style playlists below.
 - **Mood playlists from an existing playlist.** Let the user pick any of their playlists (not only Liked Songs) as the source, then split or filter it by mood, e.g. a reggaeton playlist → "Happy reggaeton" (high valence/energy) and "Sad reggaeton" (low valence). Reuses `src/library_sync.py`, `src/moods.py` + `src/selector.py` and `src/spotify_client.py`. Needs the `playlist-read-private` scope, a playlist picker in the UI, and `GET /playlists/{id}/items`. Verify first which playlists' items Spotify's Feb 2026 Development Mode lets an app read (possibly only playlists the user owns). Once more genres exist, "mood within genre" from Liked Songs also works through the existing genre filter + mood preset in `select_tracks`.
 
+**Status (2026-10-17):**
+- *Modern genres:* done. 19 broad genres from `data/genre_groups.json`; LightGBM 43.8% accuracy / 0.44 macro-F1 on unseen artists (GTZAN extras didn't help). Mood models retrained on 6,211 songs (R² 0.52–0.75).
+- *Mood playlists from an existing playlist:* done. The user picks sources (Liked Songs + playlists they own or collaborate on, the only ones Feb 2026 Development Mode lets the app read); membership is stored in `track_sources`.
+- *UI changes:* done. Ollama removed; playlists are named after the mood (+ genres) and new songs are added to the existing one (`playlists` table); one less/more slider per feature.
+- *Proxmox / Tailscale:* next, single user first.
+
 Runs locally for the user (Spotify dev mode).
 
 **Revision (2026-10-14): training architecture.** Training moved to one Colab notebook (`notebooks/train_models_colab.ipynb`) that streams all data by link. Features are now a frozen pretrained CNN (YAMNet, ONNX) embedding plus 5 Librosa rhythm/loudness numbers (2,053 per song, 16 kHz audio); genre = LightGBM classifier (81.6% on unseen artists, beat the NN head and the ensemble), mood = 4 LightGBM regressors (R² 0.52–0.69, artist-grouped test). This replaces the from-scratch CNN and 72-feature Librosa vectors described in the Architecture section below; the app no longer depends on TensorFlow.

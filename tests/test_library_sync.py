@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.library_sync import LibrarySync, SyncProgress, iter_liked_tracks, start_background_sync
+from src.library_sync import LibrarySync, SyncProgress, iter_liked_tracks, iter_source_tracks, start_background_sync
 from src.ml.analyzer import MODEL_VERSION
 from src.store import TrackStore
 
@@ -46,6 +46,19 @@ def test_iter_liked_tracks_paginates_and_skips_local_and_null():
     assert [t["spotify_id"] for t in tracks] == ["a", "b"]
     assert tracks[0]["artists"] == "A, B"
     assert sp.offsets == [0, 3]
+
+
+def test_iter_playlist_tracks_reads_item_field_and_skips_episodes():
+    class PlaylistSp:
+        def _get(self, url, **params):
+            return {"items": [{"item": {"id": "a", "uri": "spotify:track:a", "name": "a", "artists": [{"name": "X"}]}},
+                              {"item": {"id": "e", "uri": "spotify:episode:e", "name": "pod", "type": "episode"}},
+                              {"track": {"id": "b", "uri": "spotify:track:b", "name": "b", "artists": []}}],
+                    "next": None}
+
+    tracks = list(iter_source_tracks(PlaylistSp(), "p1"))
+    assert [t["spotify_id"] for t in tracks] == ["a", "b"]
+    assert tracks[0]["artists"] == "X"
 
 
 def make_sync(tmp_path, previews, audio, analyzer=None):

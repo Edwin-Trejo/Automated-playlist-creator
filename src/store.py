@@ -22,6 +22,14 @@ CREATE TABLE IF NOT EXISTS playlists (
     url TEXT,
     updated_at TEXT
 );
+CREATE TABLE IF NOT EXISTS track_sources (
+    source_id TEXT NOT NULL,
+    spotify_id TEXT NOT NULL,
+    PRIMARY KEY (source_id, spotify_id)
+);
+-- Libraries synced before sources existed only held Liked Songs.
+INSERT INTO track_sources (source_id, spotify_id)
+    SELECT 'liked', spotify_id FROM tracks WHERE NOT EXISTS (SELECT 1 FROM track_sources);
 """
 
 
@@ -65,10 +73,38 @@ class TrackStore:
             rows = conn.execute("SELECT spotify_id FROM tracks WHERE model_version = ?", (version,)).fetchall()
         return {r["spotify_id"] for r in rows}
 
-    def analyzed_tracks(self):
+    @staticmethod
+    def _source_filter(sources):
+        """SQL condition + params limiting tracks to the given sources (None = all tracks)."""
+        if sources is None:
+            return "1", []
+        sources = list(sources)
+        if not sources:
+            return "0", []
+        return (f"spotify_id IN (SELECT spotify_id FROM track_sources WHERE source_id IN ({', '.join('?' * len(sources))}))",
+                sources)
+
+    def analyzed_tracks(self, sources=None):
+        cond, params = self._source_filter(sources)
         with self._connect() as conn:
-            rows = conn.execute("SELECT * FROM tracks WHERE preview_found = 1 ORDER BY spotify_id").fetchall()
+            rows = conn.execute(f"SELECT * FROM tracks WHERE preview_found = 1 AND {cond} ORDER BY spotify_id",
+                                params).fetchall()
         return [dict(r) for r in rows]
+
+    def set_source_tracks(self, source_id, spotify_ids):
+        """Replace the songs a source (Liked Songs or a playlist) contains."""
+        with self._connect() as conn:
+            conn.execute("DELETE FROM track_sources WHERE source_id = ?", (source_id,))
+            conn.executemany("INSERT OR IGNORE INTO track_sources (source_id, spotify_id) VALUES (?, ?)",
+                             [(source_id, sid) for sid in spotify_ids])
+
+    def source_counts(self):
+        """{source_id: {"total": songs synced, "analyzed": songs with a preview}}."""
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT s.source_id, COUNT(*) AS total, COALESCE(SUM(t.preview_found), 0) AS analyzed "
+                "FROM track_sources s LEFT JOIN tracks t ON t.spotify_id = s.spotify_id GROUP BY s.source_id").fetchall()
+        return {r["source_id"]: {"total": r["total"], "analyzed": r["analyzed"]} for r in rows}
 
     def get_playlist(self, key):
         """The Spotify playlist the app saves to for this mood + genre key."""
@@ -84,8 +120,9 @@ class TrackStore:
                 "url=excluded.url, updated_at=excluded.updated_at",
                 (key, playlist_id, name, url))
 
-    def counts(self):
+    def counts(self, sources=None):
+        cond, params = self._source_filter(sources)
         with self._connect() as conn:
             total, analyzed = conn.execute(
-                "SELECT COUNT(*), COALESCE(SUM(preview_found), 0) FROM tracks").fetchone()
+                f"SELECT COUNT(*), COALESCE(SUM(preview_found), 0) FROM tracks WHERE {cond}", params).fetchone()
         return {"total": total, "analyzed": analyzed, "no_preview": total - analyzed}

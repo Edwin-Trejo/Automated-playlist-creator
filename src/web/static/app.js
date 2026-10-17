@@ -88,12 +88,14 @@ function showSyncError(msg) {
 }
 
 async function startSync() {
+  const sources = selectedSources();
+  if (!sources.length) return showSyncError("Select at least one source to sync.");
   $("sync-error").hidden = true;
   $("sync-btn").disabled = true;
   $("progress").hidden = false;
-  $("progress-text").textContent = "Fetching your liked songs…";
+  $("progress-text").textContent = "Fetching your songs…";
   try {
-    await api("/sync", {});
+    await api("/sync", { sources });
     pollSync();
   } catch (e) {
     showSyncError(e.message);
@@ -111,7 +113,7 @@ async function pollSync() {
   $("progress-bar").value = p.done;
   $("progress-text").textContent =
     `${p.done}/${p.total} · ${p.analyzed} analyzed · ${p.no_preview} no preview · ${p.failed} failed`;
-  $("counts").textContent = `${p.counts.analyzed} analyzed · ${p.counts.no_preview} without preview`;
+  $("counts").textContent = `${p.counts.analyzed} analyzed · ${p.counts.no_preview} without preview (all sources)`;
   if (p.running) {
     $("sync-btn").disabled = true;
     $("progress").hidden = false;
@@ -120,8 +122,66 @@ async function pollSync() {
     $("sync-btn").disabled = false;
     if (p.error) showSyncError(p.error);
     else if (p.total) $("progress-text").textContent += " · done (reload to refresh genres)";
+    if (state.syncing) loadSources(); // refresh the per-source song counts
+  }
+  state.syncing = p.running;
+}
+
+// ---- sources: Liked Songs + the user's own playlists; the selection is remembered in this browser ----
+const SOURCES_KEY = "playlist-creator.sources";
+
+function savedSources() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SOURCES_KEY));
+    if (Array.isArray(saved)) return saved;
+  } catch (e) { /* storage unavailable: use the default */ }
+  return ["liked"];
+}
+
+function selectedSources() {
+  const boxes = [...document.querySelectorAll("#sources input")];
+  return boxes.length ? boxes.filter((b) => b.checked).map((b) => b.value) : savedSources();
+}
+
+function sourceLabel(s) {
+  if (!s.total) return "not synced yet";
+  return `${s.analyzed} of ${s.total} analyzed`;
+}
+
+function renderSources(list) {
+  const chosen = new Set(savedSources());
+  const box = $("sources");
+  box.replaceChildren();
+  for (const s of list) {
+    const label = document.createElement("label");
+    label.className = "chip";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.value = s.id;
+    input.checked = chosen.has(s.id);
+    const count = document.createElement("span");
+    count.className = "muted";
+    count.textContent = ` · ${sourceLabel(s)}`;
+    label.append(input, ` ${s.name}`, count);
+    box.appendChild(label);
   }
 }
+
+async function loadSources() {
+  try {
+    const data = await api("/sources");
+    $("sources-error").hidden = true;
+    renderSources(data.sources);
+  } catch (e) {
+    renderSources([{ id: "liked", name: "Liked Songs", total: 0, analyzed: 0 }]);
+    $("sources-error").textContent = `Couldn't load your playlists (${e.message}). Log out and log in again to allow it.`;
+    $("sources-error").hidden = false;
+  }
+}
+
+$("sources").addEventListener("change", () => {
+  try { localStorage.setItem(SOURCES_KEY, JSON.stringify(selectedSources())); } catch (e) { /* not remembered */ }
+});
 
 // ---- generate + results ----
 const fmt = (v, digits = 2) => (v === null || v === undefined ? "–" : Number(v).toFixed(digits));
@@ -190,10 +250,16 @@ function renderTarget() {
 
 async function generate() {
   const genres = [...document.querySelectorAll("#genres input:checked")].map((i) => i.value);
+  const sources = selectedSources();
+  if (!sources.length) {
+    $("results").hidden = false;
+    $("results-note").textContent = "Select at least one source under Your library.";
+    return;
+  }
   $("generate-btn").disabled = true;
   try {
     const data = await api("/generate", {
-      mood: state.mood, adjust: readSliders(), genres, size: Number($("size").value),
+      mood: state.mood, adjust: readSliders(), genres, sources, size: Number($("size").value),
       new_playlist: $("new-playlist").checked,
     });
     state.tracks = data.tracks;
@@ -250,4 +316,5 @@ $("generate-btn").addEventListener("click", generate);
 $("save-btn").addEventListener("click", save);
 // Add mode leaves out songs already in the playlist, so switching modes needs a fresh preview.
 $("new-playlist").addEventListener("change", () => { if (!$("results").hidden) generate(); });
+loadSources();
 pollSync(); // resume progress display if a sync is already running

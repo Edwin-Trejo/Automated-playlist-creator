@@ -46,6 +46,29 @@ def test_playlist_mapping(store):
         "playlist_id": "p2", "name": "Happy (2)", "url": "u2"}
 
 
+def test_sources_filter_tracks_and_counts(store):
+    for sid in "abc":
+        store.upsert(row(sid))
+    store.upsert(row("d", preview_found=0))
+    store.set_source_tracks("liked", ["a", "b", "d"])
+    store.set_source_tracks("p1", ["b", "c"])
+    store.set_source_tracks("p1", ["c"])  # replaces, does not add
+    assert [t["spotify_id"] for t in store.analyzed_tracks(["liked"])] == ["a", "b"]
+    assert [t["spotify_id"] for t in store.analyzed_tracks(["liked", "p1"])] == ["a", "b", "c"]
+    assert store.analyzed_tracks([]) == []
+    assert store.counts(["liked"]) == {"total": 3, "analyzed": 2, "no_preview": 1}
+    assert store.source_counts() == {"liked": {"total": 3, "analyzed": 2}, "p1": {"total": 1, "analyzed": 1}}
+
+
+def test_existing_library_becomes_liked_songs(tmp_path):
+    old = TrackStore(tmp_path / "old.db")
+    old.upsert(row("a"))
+    with old._connect() as conn:  # simulate a database from before sources existed
+        conn.execute("DELETE FROM track_sources")
+    reopened = TrackStore(tmp_path / "old.db")
+    assert [t["spotify_id"] for t in reopened.analyzed_tracks(["liked"])] == ["a"]
+
+
 def test_get_many_preserves_order(store):
     for sid in "abc":
         store.upsert(row(sid))

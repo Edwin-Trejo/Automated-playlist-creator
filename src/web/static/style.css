@@ -53,6 +53,8 @@ th { color: var(--muted); font-weight: 500; }
 #target-hint { margin: 0 0 4px; }
 #target-hint a { color: var(--accent); }
 .hint { margin: -4px 0 8px; font-size: 13px; }
+.sources { max-height: 180px; overflow-y: auto; margin-bottom: 8px; }
+.sources .muted { font-size: 13px; }
 @media (max-width: 600px) {
   .slider { grid-template-columns: 52px 1fr 52px 28px; row-gap: 2px;
             grid-template-areas: "label label value reset" "less range more ."; }

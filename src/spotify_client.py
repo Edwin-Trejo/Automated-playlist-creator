@@ -2,7 +2,8 @@ import os
 
 from spotipy.oauth2 import SpotifyOAuth
 
-SCOPES = "user-library-read playlist-modify-private playlist-modify-public"
+SCOPES = ("user-library-read playlist-read-private playlist-read-collaborative "
+          "playlist-modify-private playlist-modify-public")
 DEFAULT_REDIRECT = "http://127.0.0.1:5000/callback"
 MAX_ITEMS_PER_REQUEST = 100
 
@@ -56,13 +57,27 @@ def unique_name(name, playlists):
     return candidate
 
 
+def playlist_entries(sp, playlist_id):
+    """Only works for playlists the user owns or collaborates on (Feb 2026 Development Mode)."""
+    return _pages(sp, f"playlists/{playlist_id}/items", limit=100)
+
+
 def playlist_track_ids(sp, playlist_id):
     ids = []
-    for entry in _pages(sp, f"playlists/{playlist_id}/items", limit=100):
+    for entry in playlist_entries(sp, playlist_id):
         track = entry.get("item") or entry.get("track") or {}
         if track.get("id"):
             ids.append(track["id"])
     return ids
+
+
+def readable_playlists(playlists, user_id):
+    """Playlists whose songs the app may read: ones the user owns or collaborates on."""
+    return [p for p in playlists if (p.get("owner") or {}).get("id") == user_id or p.get("collaborative")]
+
+
+def playlist_size(playlist):
+    return ((playlist.get("items") or playlist.get("tracks") or {}).get("total")) or 0
 
 
 def add_items(sp, playlist_id, uris):

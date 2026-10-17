@@ -4,9 +4,13 @@
 <section class="card">
   <div class="row">
     <h2>Your library</h2>
-    <button id="sync-btn">Sync liked songs</button>
+    <button id="sync-btn">Sync selected</button>
   </div>
-  <p id="counts" class="muted">{{ counts.analyzed }} analyzed · {{ counts.no_preview }} without preview</p>
+  <h3>Sources</h3>
+  <p class="muted hint">Songs are picked only from the sources you select. Sync after selecting a new one.</p>
+  <div id="sources" class="chips sources"><span class="muted">Loading your playlists…</span></div>
+  <p id="sources-error" class="muted" hidden></p>
+  <p id="counts" class="muted">{{ counts.analyzed }} analyzed · {{ counts.no_preview }} without preview (all sources)</p>
   <div id="progress" hidden>
     <progress id="progress-bar" max="1" value="0"></progress>
     <span id="progress-text" class="muted"></span>

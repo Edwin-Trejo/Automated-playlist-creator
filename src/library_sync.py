@@ -6,6 +6,23 @@ from datetime import datetime, timezone
 from src.audio.loader import download_audio
 from src.audio.preview import find_preview
 from src.ml.analyzer import MODEL_VERSION
+from src.spotify_client import playlist_entries
+
+
+LIKED = "liked"  # source id for Liked Songs; any other source id is a Spotify playlist id
+
+
+def _track(entry):
+    """Track dict from a liked-songs or playlist entry; None for local files, podcasts and unavailable tracks."""
+    t = entry.get("item") or entry.get("track") or {}
+    if not t.get("id") or t.get("is_local") or t.get("type", "track") != "track":
+        return None
+    return {
+        "spotify_id": t["id"],
+        "uri": t["uri"],
+        "name": t["name"],
+        "artists": ", ".join(a["name"] for a in t.get("artists", [])),
+    }
 
 
 def iter_liked_tracks(sp, page_size=50):
@@ -14,18 +31,21 @@ def iter_liked_tracks(sp, page_size=50):
     while True:
         page = sp.current_user_saved_tracks(limit=page_size, offset=offset)
         for entry in page.get("items", []):
-            t = entry.get("track") or {}
-            if not t.get("id") or t.get("is_local"):
-                continue
-            yield {
-                "spotify_id": t["id"],
-                "uri": t["uri"],
-                "name": t["name"],
-                "artists": ", ".join(a["name"] for a in t.get("artists", [])),
-            }
+            if t := _track(entry):
+                yield t
         if not page.get("next"):
             return
         offset += page_size
+
+
+def iter_playlist_tracks(sp, playlist_id):
+    for entry in playlist_entries(sp, playlist_id):
+        if t := _track(entry):
+            yield t
+
+
+def iter_source_tracks(sp, source_id):
+    return iter_liked_tracks(sp) if source_id == LIKED else iter_playlist_tracks(sp, source_id)
 
 
 @dataclass
