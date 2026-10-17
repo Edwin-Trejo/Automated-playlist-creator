@@ -1,0 +1,21 @@
+{
+  "Reggaeton / Urbano": ["reggaeton", "latino"],
+  "Latin": ["latin", "salsa", "tango", "spanish"],
+  "Brazilian": ["brazil", "samba", "forro", "sertanejo", "pagode", "mpb"],
+  "House": ["house", "deep-house", "chicago-house", "progressive-house", "garage"],
+  "Techno": ["techno", "detroit-techno", "minimal-techno"],
+  "EDM / Dance": ["edm", "dance", "electro", "club", "trance", "hardstyle"],
+  "Bass / DnB": ["dubstep", "drum-and-bass", "breakbeat"],
+  "Hip-Hop": ["hip-hop"],
+  "R&B / Soul / Funk": ["r-n-b", "soul", "funk", "disco", "gospel"],
+  "Pop": ["pop", "indie-pop", "synth-pop", "power-pop", "pop-film"],
+  "K-pop / J-pop / C-pop": ["k-pop", "j-pop", "j-idol", "j-dance", "cantopop", "mandopop"],
+  "Rock": ["rock", "alt-rock", "alternative", "hard-rock", "grunge", "psych-rock", "indie", "j-rock", "rock-n-roll", "rockabilly"],
+  "Punk / Emo": ["punk", "punk-rock", "emo", "ska", "hardcore"],
+  "Metal": ["metal", "heavy-metal", "black-metal", "death-metal", "metalcore", "grindcore"],
+  "Jazz / Blues": ["jazz", "blues"],
+  "Classical": ["classical", "opera", "piano"],
+  "Country / Folk": ["country", "bluegrass", "honky-tonk", "folk", "acoustic", "singer-songwriter", "songwriter"],
+  "Reggae / Dancehall": ["reggae", "dancehall", "dub", "afrobeat"],
+  "Ambient / Chill": ["ambient", "chill", "sleep", "study", "new-age", "trip-hop", "idm"]
+}
