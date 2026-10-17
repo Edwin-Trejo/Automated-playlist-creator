@@ -1,5 +1,5 @@
 const FEATURES = window.APP.features;
-const state = { mood: null, tracks: [], genres: [], savedMood: null, target: null };
+const state = { mood: null, tracks: [], genres: [], savedMood: null, target: null, sources: [], showAllSources: false };
 const $ = (id) => document.getElementById(id);
 
 async function api(url, body) {
@@ -149,23 +149,56 @@ function sourceLabel(s) {
   return `${s.analyzed} of ${s.total} analyzed`;
 }
 
-function renderSources(list) {
+const RECENT_PLAYLISTS = 5;
+
+function sourceCover(s) {
+  if (s.image) {
+    const img = document.createElement("img");
+    img.className = "cover";
+    img.src = s.image;
+    img.alt = "";
+    img.loading = "lazy";
+    return img;
+  }
+  const tile = document.createElement("span");
+  tile.className = s.id === "liked" ? "cover liked" : "cover blank";
+  tile.textContent = s.id === "liked" ? "♥" : "♪";
+  tile.setAttribute("aria-hidden", "true");
+  return tile;
+}
+
+// Liked Songs + the 5 most recent playlists; playlists further down show only when selected or after "Show all".
+function renderSources(list = state.sources) {
+  state.sources = list;
   const chosen = new Set(savedSources());
+  const playlists = list.filter((s) => s.id !== "liked");
+  const visible = list.filter((s) => s.id === "liked" || state.showAllSources ||
+    playlists.indexOf(s) < RECENT_PLAYLISTS || chosen.has(s.id));
   const box = $("sources");
   box.replaceChildren();
-  for (const s of list) {
+  for (const s of visible) {
     const label = document.createElement("label");
-    label.className = "chip";
+    label.className = "source";
     const input = document.createElement("input");
     input.type = "checkbox";
     input.value = s.id;
     input.checked = chosen.has(s.id);
+    const text = document.createElement("span");
+    text.className = "source-text";
+    const name = document.createElement("span");
+    name.className = "source-name";
+    name.textContent = s.name;
     const count = document.createElement("span");
     count.className = "muted";
-    count.textContent = ` · ${sourceLabel(s)}`;
-    label.append(input, ` ${s.name}`, count);
+    count.textContent = sourceLabel(s);
+    text.append(name, count);
+    label.append(input, sourceCover(s), text);
     box.appendChild(label);
   }
+  const hidden = list.length - visible.length;
+  const more = $("sources-more");
+  more.hidden = playlists.length <= RECENT_PLAYLISTS;
+  more.textContent = state.showAllSources ? "Show fewer" : `Show all playlists (${hidden} more)`;
 }
 
 async function loadSources() {
@@ -174,14 +207,19 @@ async function loadSources() {
     $("sources-error").hidden = true;
     renderSources(data.sources);
   } catch (e) {
-    renderSources([{ id: "liked", name: "Liked Songs", total: 0, analyzed: 0 }]);
+    renderSources([{ id: "liked", name: "Liked Songs", total: 0, analyzed: 0, image: null }]);
     $("sources-error").textContent = `Couldn't load your playlists (${e.message}). Log out and log in again to allow it.`;
     $("sources-error").hidden = false;
   }
 }
 
 $("sources").addEventListener("change", () => {
+  // Selected playlists are always shown, so the visible checkboxes hold the whole selection.
   try { localStorage.setItem(SOURCES_KEY, JSON.stringify(selectedSources())); } catch (e) { /* not remembered */ }
+});
+$("sources-more").addEventListener("click", () => {
+  state.showAllSources = !state.showAllSources;
+  renderSources();
 });
 
 // ---- generate + results ----

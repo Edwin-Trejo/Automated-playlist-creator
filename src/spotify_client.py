@@ -76,6 +76,12 @@ def readable_playlists(playlists, user_id):
     return [p for p in playlists if (p.get("owner") or {}).get("id") == user_id or p.get("collaborative")]
 
 
+def playlist_image(playlist):
+    """URL of the playlist's smallest cover image (Spotify lists them largest first), or None."""
+    images = [i for i in playlist.get("images") or [] if i and i.get("url")]
+    return images[-1]["url"] if images else None
+
+
 def playlist_size(playlist):
     return ((playlist.get("items") or playlist.get("tracks") or {}).get("total")) or 0
 

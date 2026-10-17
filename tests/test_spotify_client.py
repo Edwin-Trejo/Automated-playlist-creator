@@ -1,5 +1,5 @@
-from src.spotify_client import (SCOPES, create_playlist, find_playlist, make_oauth, playlist_track_ids, unique_name,
-                                user_playlists)
+from src.spotify_client import (SCOPES, create_playlist, find_playlist, make_oauth, playlist_image, playlist_track_ids,
+                                unique_name, user_playlists)
 
 
 class PagedSp:
@@ -31,6 +31,12 @@ def test_find_playlist_prefers_id_then_own_name():
     assert find_playlist(lists, "me", "c", "Happy")["id"] == "c"
     assert find_playlist(lists, "me", "gone", "Happy")["id"] == "b"
     assert find_playlist(lists, "me", None, "Sad") is None
+
+
+def test_playlist_image_picks_smallest():
+    big, small = {"url": "https://i/640", "width": 640}, {"url": "https://i/60", "width": 60}
+    assert playlist_image({"images": [big, small]}) == "https://i/60"
+    assert playlist_image({"images": None}) is None and playlist_image({}) is None
 
 
 def test_unique_name():

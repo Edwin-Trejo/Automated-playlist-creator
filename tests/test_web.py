@@ -130,7 +130,7 @@ def test_sources_lists_liked_and_readable_playlists(env):
     store.set_source_tracks("mine", ["t1"])
     data = client.get("/sources").get_json()["sources"]
     assert [s["id"] for s in data] == ["liked", "mine", "collab"]
-    assert data[1] == {"id": "mine", "name": "Road trip", "size": 2, "total": 1, "analyzed": 0}
+    assert data[1] == {"id": "mine", "name": "Road trip", "size": 2, "total": 1, "analyzed": 0, "image": None}
 
 
 def test_generate_uses_only_selected_sources(env):

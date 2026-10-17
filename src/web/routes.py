@@ -9,8 +9,8 @@ from src.ml.analyzer import ModelsMissingError
 from src.moods import FULL_RANGE, MOODS, build_targets
 from src.playlists import playlist_description, playlist_key, playlist_name
 from src.selector import select_tracks
-from src.spotify_client import (add_items, create_playlist, current_user_id, find_playlist, playlist_size,
-                                playlist_track_ids, readable_playlists, unique_name, user_playlists)
+from src.spotify_client import (add_items, create_playlist, current_user_id, find_playlist, playlist_image,
+                                playlist_size, playlist_track_ids, readable_playlists, unique_name, user_playlists)
 
 bp = Blueprint("main", __name__)
 TRACK_FIELDS = ("spotify_id", "name", "artists", "genre", "genre_conf", "danceability",
@@ -117,8 +117,10 @@ def sources(sp):
     except SpotifyException as exc:
         return jsonify(error=f"Spotify error: {exc.msg}"), 502
     counts = _state().store.source_counts()
-    out = [{"id": LIKED, "name": "Liked Songs", "size": None}]
-    out += [{"id": p["id"], "name": p.get("name") or "Untitled", "size": playlist_size(p)} for p in playlists]
+    # Playlists come in the order of the user's Spotify library (most recent first).
+    out = [{"id": LIKED, "name": "Liked Songs", "size": None, "image": None}]
+    out += [{"id": p["id"], "name": p.get("name") or "Untitled", "size": playlist_size(p), "image": playlist_image(p)}
+            for p in playlists]
     for s in out:
         s.update(counts.get(s["id"], {"total": 0, "analyzed": 0}))
     return jsonify(sources=out)
