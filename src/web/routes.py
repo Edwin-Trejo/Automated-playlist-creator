@@ -1,4 +1,3 @@
-from collections import Counter
 from functools import wraps
 
 from flask import Blueprint, current_app, jsonify, redirect, render_template, request, session, url_for
@@ -8,8 +7,10 @@ from spotipy.exceptions import SpotifyException
 from src.library_sync import LibrarySync, SyncProgress, iter_liked_tracks, start_background_sync
 from src.ml.analyzer import ModelsMissingError
 from src.moods import FULL_RANGE, MOODS, build_targets
+from src.playlists import playlist_description, playlist_key, playlist_name
 from src.selector import select_tracks
-from src.spotify_client import create_playlist
+from src.spotify_client import (add_items, create_playlist, current_user_id, find_playlist, playlist_track_ids,
+                                unique_name, user_playlists)
 
 bp = Blueprint("main", __name__)
 TRACK_FIELDS = ("spotify_id", "name", "artists", "genre", "genre_conf", "danceability",
@@ -47,8 +48,7 @@ def index():
         return render_template("index.html")
     store = _state().store
     genres = sorted({t["genre"] for t in store.analyzed_tracks() if t["genre"]})
-    app_data = {"moods": {m: {f: list(r) for f, r in v.items()} for m, v in MOODS.items()},
-                "full": {f: list(r) for f, r in FULL_RANGE.items()}}
+    app_data = {"features": list(FULL_RANGE)}
     return render_template("dashboard.html", counts=store.counts(), moods=list(MOODS), genres=genres, app_data=app_data)
 
 
@@ -104,17 +104,39 @@ def library():
     return jsonify(tracks=_state().store.analyzed_tracks())
 
 
+def _target_playlist(sp, mood, genres, playlists=None):
+    """The existing Spotify playlist this mood + genre filter saves to, or None if there isn't one yet."""
+    saved = _state().store.get_playlist(playlist_key(mood, genres)) or {}
+    playlists = user_playlists(sp) if playlists is None else playlists
+    return find_playlist(playlists, current_user_id(sp), saved.get("playlist_id"), playlist_name(mood, genres))
+
+
 @bp.post("/generate")
 def generate():
     body = request.get_json(silent=True) or {}
+    mood, genres = body.get("mood"), body.get("genres") or []
     try:
-        targets = build_targets(body.get("mood"), body.get("overrides"))
+        targets = build_targets(mood, body.get("adjust"))
         size = max(1, min(int(body.get("size", 25)), 100))
     except (ValueError, TypeError) as exc:
         return jsonify(error=str(exc)), 400
-    tracks = select_tracks(_state().store.analyzed_tracks(), targets, body.get("genres") or None, size)
+    tracks = _state().store.analyzed_tracks()
+    target = {"name": playlist_name(mood, genres), "url": None, "exists": False, "already_in": 0}
+    sp = None if body.get("new_playlist") else _spotify()
+    if sp is not None:
+        # Adding to the existing playlist: only suggest songs that aren't in it yet.
+        try:
+            existing = _target_playlist(sp, mood, genres)
+            if existing:
+                in_playlist = set(playlist_track_ids(sp, existing["id"]))
+                tracks = [t for t in tracks if t["spotify_id"] not in in_playlist]
+                target.update(name=existing["name"], url=existing["external_urls"]["spotify"], exists=True,
+                              already_in=len(in_playlist))
+        except SpotifyException as exc:
+            return jsonify(error=f"Spotify error: {exc.msg}"), 502
+    tracks = select_tracks(tracks, targets, genres or None, size)
     return jsonify(tracks=[{k: t.get(k) for k in TRACK_FIELDS} for t in tracks],
-                   matched=len(tracks), requested=size)
+                   matched=len(tracks), requested=size, target=target)
 
 
 @bp.post("/playlist/save")
@@ -124,13 +146,24 @@ def save_playlist(sp):
     rows = _state().store.get_many(list(body.get("track_ids") or []))
     if not rows:
         return jsonify(error="No songs to save."), 400
-    genres = [g for g, _ in Counter(r["genre"] for r in rows if r["genre"]).most_common(3)]
-    artists = [a for a, _ in Counter(r["artists"].split(", ")[0] for r in rows).most_common(5)]
-    text = _state().llm(body.get("mood"), genres, artists,
-                        base_url=current_app.config["OLLAMA_URL"], model=current_app.config["OLLAMA_MODEL"],
-                        timeout=current_app.config["OLLAMA_TIMEOUT"])
+    mood, genres = body.get("mood"), body.get("genres") or []
+    name, description = playlist_name(mood, genres), playlist_description(mood, genres)
+    uris = [r["uri"] for r in rows]
     try:
-        result = create_playlist(sp, text["name"], text["description"], [r["uri"] for r in rows])
+        playlists = user_playlists(sp)
+        existing = None if body.get("new_playlist") else _target_playlist(sp, mood, genres, playlists)
+        if existing:
+            in_playlist = set(playlist_track_ids(sp, existing["id"]))
+            new_uris = [r["uri"] for r in rows if r["spotify_id"] not in in_playlist]
+            add_items(sp, existing["id"], new_uris)
+            result = {"id": existing["id"], "url": existing["external_urls"]["spotify"], "name": existing["name"],
+                      "created": False, "added": len(new_uris), "total": len(in_playlist) + len(new_uris)}
+        else:
+            name = unique_name(name, playlists) if body.get("new_playlist") else name
+            result = {**create_playlist(sp, name, description, uris), "name": name,
+                      "created": True, "added": len(uris), "total": len(uris)}
     except SpotifyException as exc:
         return jsonify(error=f"Spotify error: {exc.msg}"), 502
-    return jsonify(**result, **text)
+    # The newest playlist for this mood + genres is where the next "add" goes.
+    _state().store.set_playlist(playlist_key(mood, genres), result["id"], result["name"], result["url"])
+    return jsonify(**result, description=description)

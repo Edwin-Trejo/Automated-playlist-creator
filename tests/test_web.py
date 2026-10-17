@@ -32,16 +32,40 @@ class FakeAuth:
 
 
 class FakeSpotify:
+    """In-memory Spotify: the user "me" and their playlists {id: {"name", "owner", "items": [track ids]}}."""
+
     def __init__(self):
         self.posts = []
+        self.playlists = {}
 
     def current_user_saved_tracks(self, limit, offset):
         return {"items": [{"track": {"id": "t1", "uri": "spotify:track:t1", "name": "Song", "artists": [{"name": "A"}]}}],
                 "next": None}
 
+    def add_playlist(self, pid, name, items=(), owner="me"):
+        self.playlists[pid] = {"name": name, "owner": owner, "items": list(items)}
+
+    def _obj(self, pid):
+        p = self.playlists[pid]
+        return {"id": pid, "name": p["name"], "owner": {"id": p["owner"]},
+                "external_urls": {"spotify": f"https://open.spotify.com/playlist/{pid}"}}
+
+    def _get(self, url, **params):
+        if url == "me":
+            return {"id": "me"}
+        if url == "me/playlists":
+            return {"items": [self._obj(pid) for pid in self.playlists], "next": None}
+        pid = url.split("/")[1]
+        return {"items": [{"item": {"id": t}} for t in self.playlists[pid]["items"]], "next": None}
+
     def _post(self, url, payload=None):
         self.posts.append((url, payload))
-        return {"id": "pl1", "external_urls": {"spotify": "https://open.spotify.com/playlist/pl1"}}
+        if url == "me/playlists":
+            pid = f"pl{len(self.playlists) + 1}"
+            self.add_playlist(pid, payload["name"])
+            return self._obj(pid)
+        self.playlists[url.split("/")[1]]["items"] += [u.rsplit(":", 1)[1] for u in payload["uris"]]
+        return {"snapshot_id": "s"}
 
 
 class FakeAnalyzer:
@@ -58,7 +82,6 @@ def env(tmp_path):
         "TESTING": True, "SECRET_KEY": "test", "STORE": store,
         "OAUTH_FACTORY": FakeAuth, "SPOTIFY_FACTORY": lambda auth: sp,
         "ANALYZER_FACTORY": FakeAnalyzer,
-        "LLM": lambda mood, genres, artists, **kw: {"name": "Disco Fever", "description": "d", "source": "ollama"},
         "SYNC_FIND_PREVIEW": lambda n, a: "http://p",
         "SYNC_DOWNLOAD": lambda url: np.ones(10, dtype="float32"),
     })
@@ -106,18 +129,85 @@ def test_generate_returns_matching_tracks(env):
     assert data["matched"] == 1
 
 
+def test_generate_applies_slider_adjustments(env):
+    _, client, store, _ = env
+    seed(store)  # danceability 0.8
+    assert len(client.post("/generate", json={"adjust": {"danceability": -1}}).get_json()["tracks"]) == 0
+    assert len(client.post("/generate", json={"adjust": {"danceability": 1}}).get_json()["tracks"]) == 1
+    assert client.post("/generate", json={"adjust": {"danceability": "x"}}).status_code == 400
+
+
 def test_generate_rejects_unknown_mood(env):
     _, client, _, _ = env
     assert client.post("/generate", json={"mood": "angry"}).status_code == 400
 
 
-def test_save_creates_playlist_with_llm_name(env):
+def test_save_creates_playlist_named_after_mood(env):
     _, client, store, sp = env
     seed(store)
     data = client.post("/playlist/save", json={"mood": "dance", "track_ids": ["t1"]}).get_json()
-    assert data["name"] == "Disco Fever" and data["url"].endswith("pl1")
-    assert sp.posts[0][0] == "me/playlists"
+    assert data["name"] == "Dance" and data["url"].endswith("pl1")
+    assert sp.posts[0][0] == "me/playlists" and sp.posts[0][1]["name"] == "Dance"
     assert sp.posts[1] == ("playlists/pl1/items", {"uris": ["spotify:track:t1"]})
+
+
+def test_save_name_includes_selected_genres(env):
+    _, client, store, sp = env
+    seed(store)
+    data = client.post("/playlist/save", json={"mood": "happy", "genres": ["disco"], "track_ids": ["t1"]}).get_json()
+    assert data["name"] == "Happy · disco"
+
+
+def test_save_adds_only_new_songs_to_existing_playlist(env):
+    _, client, store, sp = env
+    seed(store, "t1")
+    seed(store, "t2")
+    client.post("/playlist/save", json={"mood": "dance", "track_ids": ["t1"]})
+    data = client.post("/playlist/save", json={"mood": "dance", "track_ids": ["t1", "t2"]}).get_json()
+    assert data["created"] is False and data["added"] == 1 and data["total"] == 2
+    assert len(sp.playlists) == 1 and sp.playlists["pl1"]["items"] == ["t1", "t2"]
+
+
+def test_save_finds_existing_playlist_by_name(env):
+    _, client, store, sp = env
+    seed(store)
+    sp.add_playlist("old", "Dance", items=["x"])
+    sp.add_playlist("theirs", "Happy", owner="someone-else")
+    assert client.post("/playlist/save", json={"mood": "dance", "track_ids": ["t1"]}).get_json()["id"] == "old"
+    assert client.post("/playlist/save", json={"mood": "happy", "track_ids": ["t1"]}).get_json()["created"] is True
+
+
+def test_save_follows_renamed_playlist_and_recreates_deleted_one(env):
+    _, client, store, sp = env
+    seed(store)
+    client.post("/playlist/save", json={"mood": "dance", "track_ids": ["t1"]})
+    sp.playlists["pl1"]["name"] = "My dance songs"  # renamed in Spotify: still found by its id
+    assert client.post("/playlist/save", json={"mood": "dance", "track_ids": ["t1"]}).get_json()["id"] == "pl1"
+    del sp.playlists["pl1"]  # deleted (unfollowed) in Spotify: a new one is created
+    data = client.post("/playlist/save", json={"mood": "dance", "track_ids": ["t1"]}).get_json()
+    assert data["created"] is True and data["name"] == "Dance"
+
+
+def test_save_new_playlist_gets_unique_name_and_becomes_target(env):
+    _, client, store, sp = env
+    seed(store, "t1")
+    seed(store, "t2")
+    client.post("/playlist/save", json={"mood": "dance", "track_ids": ["t1"]})
+    data = client.post("/playlist/save", json={"mood": "dance", "track_ids": ["t1"], "new_playlist": True}).get_json()
+    assert data["created"] is True and data["name"] == "Dance (2)"
+    assert client.post("/playlist/save", json={"mood": "dance", "track_ids": ["t2"]}).get_json()["id"] == data["id"]
+
+
+def test_generate_skips_songs_already_in_target_playlist(env):
+    _, client, store, sp = env
+    seed(store, "t1")
+    seed(store, "t2")
+    sp.add_playlist("pl9", "Dance", items=["t1"])
+    data = client.post("/generate", json={"mood": "dance"}).get_json()
+    assert [t["spotify_id"] for t in data["tracks"]] == ["t2"]
+    assert data["target"] == {"name": "Dance", "url": "https://open.spotify.com/playlist/pl9", "exists": True, "already_in": 1}
+    data = client.post("/generate", json={"mood": "dance", "new_playlist": True}).get_json()
+    assert len(data["tracks"]) == 2 and data["target"]["exists"] is False
 
 
 def test_save_requires_tracks(env):
@@ -139,14 +229,3 @@ def test_server_port_follows_redirect_uri(monkeypatch):
     assert server_port() == 8888
     monkeypatch.delenv("SPOTIFY_REDIRECT_URI")
     assert server_port() == 5000
-
-
-def test_save_passes_ollama_settings(env):
-    app, client, store, _ = env
-    seed(store)
-    seen = {}
-    app.extensions["playlist"].llm = lambda mood, genres, artists, **kw: seen.update(kw) or {
-        "name": "N", "description": "d", "source": "ollama"}
-    client.post("/playlist/save", json={"mood": "dance", "track_ids": ["t1"]})
-    assert seen["model"] == app.config["OLLAMA_MODEL"]
-    assert seen["timeout"] == app.config["OLLAMA_TIMEOUT"] == 120

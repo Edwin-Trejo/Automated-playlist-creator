@@ -14,7 +14,14 @@ CREATE TABLE IF NOT EXISTS tracks (
     genre TEXT, genre_conf REAL,
     danceability REAL, energy REAL, valence REAL, acousticness REAL, tempo REAL,
     model_version TEXT, analyzed_at TEXT
-)
+);
+CREATE TABLE IF NOT EXISTS playlists (
+    key TEXT PRIMARY KEY,
+    playlist_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    url TEXT,
+    updated_at TEXT
+);
 """
 
 
@@ -25,7 +32,7 @@ class TrackStore:
         self.path = str(path)
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         with self._connect() as conn:
-            conn.execute(SCHEMA)
+            conn.executescript(SCHEMA)
 
     def _connect(self):
         conn = sqlite3.connect(self.path, timeout=30)
@@ -62,6 +69,20 @@ class TrackStore:
         with self._connect() as conn:
             rows = conn.execute("SELECT * FROM tracks WHERE preview_found = 1 ORDER BY spotify_id").fetchall()
         return [dict(r) for r in rows]
+
+    def get_playlist(self, key):
+        """The Spotify playlist the app saves to for this mood + genre key."""
+        with self._connect() as conn:
+            r = conn.execute("SELECT * FROM playlists WHERE key = ?", (key,)).fetchone()
+        return dict(r) if r else None
+
+    def set_playlist(self, key, playlist_id, name, url):
+        with self._connect() as conn:
+            conn.execute(
+                "INSERT INTO playlists (key, playlist_id, name, url, updated_at) VALUES (?, ?, ?, ?, datetime('now')) "
+                "ON CONFLICT(key) DO UPDATE SET playlist_id=excluded.playlist_id, name=excluded.name, "
+                "url=excluded.url, updated_at=excluded.updated_at",
+                (key, playlist_id, name, url))
 
     def counts(self):
         with self._connect() as conn:

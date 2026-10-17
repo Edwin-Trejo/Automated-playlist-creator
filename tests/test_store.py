@@ -38,6 +38,14 @@ def test_versions_analyzed_and_counts(store):
     assert store.counts() == {"total": 3, "analyzed": 2, "no_preview": 1}
 
 
+def test_playlist_mapping(store):
+    assert store.get_playlist("happy") is None
+    store.set_playlist("happy", "p1", "Happy", "u1")
+    store.set_playlist("happy", "p2", "Happy (2)", "u2")
+    assert {k: store.get_playlist("happy")[k] for k in ("playlist_id", "name", "url")} == {
+        "playlist_id": "p2", "name": "Happy (2)", "url": "u2"}
+
+
 def test_get_many_preserves_order(store):
     for sid in "abc":
         store.upsert(row(sid))

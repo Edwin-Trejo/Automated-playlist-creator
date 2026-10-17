@@ -21,6 +21,7 @@
   </div>
 
   <h3>Fine-tune</h3>
+  <p class="muted hint">Optional. Leave a slider in the middle to keep the mood as it is.</p>
   <div id="sliders"></div>
 
   <h3>Genres</h3>
@@ -38,8 +39,12 @@
 <section class="card" id="results" hidden>
   <div class="row">
     <h2>Preview</h2>
-    <button id="save-btn" class="primary">Save to Spotify</button>
+    <div class="save-controls">
+      <label class="check"><input type="checkbox" id="new-playlist"> Create a new playlist</label>
+      <button id="save-btn" class="primary">Save to Spotify</button>
+    </div>
   </div>
+  <p id="target-hint" class="muted"></p>
   <p id="results-note" class="muted"></p>
   <div class="table-wrap">
     <table>

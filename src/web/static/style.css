@@ -21,9 +21,23 @@ button:disabled { opacity: .5; cursor: default; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { background: transparent; border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; }
 .chip.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
-.slider { display: grid; grid-template-columns: 110px 1fr 1fr 100px; gap: 8px; align-items: center; margin: 6px 0; }
-.slider .label { text-transform: capitalize; }
-.slider .value { color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.slider { display: grid; grid-template-columns: 110px 52px 1fr 52px 110px 28px; gap: 8px; align-items: center; margin: 6px 0;
+          grid-template-areas: "label less range more value reset"; }
+.slider .label { grid-area: label; }
+.slider .end { color: var(--muted); font-size: 13px; }
+.slider .less { grid-area: less; text-align: right; }
+.slider .more { grid-area: more; }
+/* Centered slider: plain track with a middle mark (no left-to-right fill, which would suggest "less"). */
+.slider input { grid-area: range; -webkit-appearance: none; appearance: none; height: 4px; border-radius: 2px; cursor: pointer;
+                background: linear-gradient(var(--muted), var(--muted)) center / 2px 12px no-repeat, var(--border); }
+.slider input::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--text); }
+.slider input::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 50%; background: var(--text); }
+.slider.changed input::-webkit-slider-thumb { background: var(--accent); }
+.slider.changed input::-moz-range-thumb { background: var(--accent); }
+.slider .value { grid-area: value; color: var(--muted); }
+.slider .reset { grid-area: reset; visibility: hidden; }
+.slider.changed .value { color: var(--accent); }
+.slider.changed .reset { visibility: visible; }
 input[type=range] { accent-color: var(--accent); width: 100%; }
 input[type=number] { width: 70px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; }
 progress { width: 100%; accent-color: var(--accent); }
@@ -33,6 +47,14 @@ th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--bord
 th { color: var(--muted); font-weight: 500; }
 .icon { background: transparent; padding: 2px 8px; color: var(--muted); }
 #save-result a { color: var(--accent); font-weight: 600; }
+.save-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.check input { accent-color: var(--accent); }
+#target-hint { margin: 0 0 4px; }
+#target-hint a { color: var(--accent); }
+.hint { margin: -4px 0 8px; font-size: 13px; }
 @media (max-width: 600px) {
-  .slider { grid-template-columns: 1fr 1fr; }
+  .slider { grid-template-columns: 52px 1fr 52px 28px; row-gap: 2px;
+            grid-template-areas: "label label value reset" "less range more ."; }
+  .slider .value { text-align: right; }
 }

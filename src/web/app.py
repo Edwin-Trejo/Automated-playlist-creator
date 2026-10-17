@@ -11,7 +11,6 @@ from src.audio.loader import download_audio
 from src.audio.preview import find_preview
 from src.config import DB_PATH
 from src.library_sync import SyncProgress
-from src.llm import generate_playlist_text
 from src.ml.analyzer import Analyzer
 from src.spotify_client import DEFAULT_REDIRECT, make_oauth
 from src.store import TrackStore
@@ -23,7 +22,6 @@ class AppState:
     analyzer_factory: object
     oauth_factory: object
     spotify_factory: object
-    llm: object
     find_preview: object
     download: object
     progress: SyncProgress = field(default_factory=SyncProgress)
@@ -39,12 +37,7 @@ class AppState:
 def create_app(test_config=None):
     load_dotenv()
     app = Flask(__name__)
-    app.config.update(
-        SECRET_KEY=os.getenv("FLASK_SECRET_KEY") or os.urandom(24).hex(),
-        OLLAMA_URL=os.getenv("OLLAMA_URL", "http://localhost:11434"),
-        OLLAMA_MODEL=os.getenv("OLLAMA_MODEL", "llama3.2:3b"),
-        OLLAMA_TIMEOUT=int(os.getenv("OLLAMA_TIMEOUT", "120")),  # first call loads the model; can be slow
-    )
+    app.config.update(SECRET_KEY=os.getenv("FLASK_SECRET_KEY") or os.urandom(24).hex())
     if test_config:
         app.config.update(test_config)
 
@@ -54,7 +47,6 @@ def create_app(test_config=None):
         analyzer_factory=cfg.get("ANALYZER_FACTORY", Analyzer.load),
         oauth_factory=cfg.get("OAUTH_FACTORY", make_oauth),
         spotify_factory=cfg.get("SPOTIFY_FACTORY", lambda auth: spotipy.Spotify(auth_manager=auth)),
-        llm=cfg.get("LLM", generate_playlist_text),
         find_preview=cfg.get("SYNC_FIND_PREVIEW", find_preview),
         download=cfg.get("SYNC_DOWNLOAD", download_audio),
     )
