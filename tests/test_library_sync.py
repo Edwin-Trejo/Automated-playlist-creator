@@ -18,8 +18,8 @@ class FakeAnalyzer:
         return dict(ANALYSIS)
 
 
-def track(sid, name=None):
-    return {"spotify_id": sid, "uri": f"spotify:track:{sid}", "name": name or sid, "artists": "Main, Feat"}
+def track(sid, name=None, artists="Main, Feat"):
+    return {"spotify_id": sid, "uri": f"spotify:track:{sid}", "name": name or sid, "artists": artists}
 
 
 class FakeSpotify:
@@ -61,7 +61,15 @@ def test_iter_playlist_tracks_reads_item_field_and_skips_episodes():
     assert tracks[0]["artists"] == "X"
 
 
-def make_sync(tmp_path, previews, audio, analyzer=None):
+class FakeDataset:
+    def __init__(self, rows):
+        self.rows = rows
+
+    def find(self, track):
+        return self.rows.get(track["spotify_id"])
+
+
+def make_sync(tmp_path, previews, audio, analyzer=None, dataset=None):
     store = TrackStore(tmp_path / "t.db")
     seen_artists = []
 
@@ -69,7 +77,8 @@ def make_sync(tmp_path, previews, audio, analyzer=None):
         seen_artists.append(artist)
         return previews.get(name)
 
-    sync = LibrarySync(store, analyzer or FakeAnalyzer(), find_preview=fake_find, download=lambda url: audio.get(url))
+    sync = LibrarySync(store, analyzer or FakeAnalyzer(), find_preview=fake_find, download=lambda url: audio.get(url),
+                       dataset=dataset)
     return sync, store, seen_artists
 
 
@@ -78,15 +87,44 @@ def test_run_records_outcomes(tmp_path):
     audio = {"u-ok": np.array([1.0], dtype=np.float32)}  # u-bad -> None
     sync, store, artists = make_sync(tmp_path, previews, audio)
     progress = SyncProgress()
-    sync.run([track("ok"), track("nopreview"), track("bad-audio")], progress)
+    sync.run([track("ok"), track("nopreview", artists="Other"), track("bad-audio", artists="Third")], progress)
 
-    assert progress.to_dict()["analyzed"] == 1
-    assert (progress.done, progress.analyzed, progress.no_preview, progress.failed) == (3, 1, 1, 1)
+    assert (progress.done, progress.analyzed, progress.no_preview, progress.failed) == (3, 1, 2, 0)
     assert progress.running is False
-    assert store.get("ok")["energy"] == 0.7 and store.get("ok")["model_version"] == MODEL_VERSION
+    ok = store.get("ok")
+    assert ok["energy"] == 0.7 and ok["model_version"] == MODEL_VERSION and ok["analysis_source"] == "audio"
     assert store.get("nopreview")["preview_found"] == 0
-    assert store.get("bad-audio") is None  # failed downloads are retried next sync
+    assert store.get("bad-audio")["preview_found"] == 0
     assert artists[0] == "Main"
+
+
+def test_no_audio_falls_back_to_dataset(tmp_path):
+    dataset = FakeDataset({"x": {"genre": "Latin", "genre_conf": 1.0, "danceability": 0.9, "energy": 0.8,
+                                 "valence": 0.7, "acousticness": 0.1, "tempo": 100.0}})
+    sync, store, _ = make_sync(tmp_path, {}, {}, dataset=dataset)
+    progress = SyncProgress()
+    sync.run([track("x")], progress)
+    assert progress.from_dataset == 1
+    assert store.get("x")["genre"] == "Latin" and store.get("x")["analysis_source"] == "dataset"
+
+
+def test_no_audio_is_estimated_from_artist_after_their_other_songs(tmp_path):
+    # "lost" comes first but is estimated at the end, once "ok" by the same artist is analyzed.
+    sync, store, _ = make_sync(tmp_path, {"ok": "u"}, {"u": np.array([1.0], dtype=np.float32)})
+    progress = SyncProgress()
+    sync.run([track("lost"), track("ok")], progress)
+    assert (progress.analyzed, progress.estimated, progress.done) == (1, 1, 2)
+    lost = store.get("lost")
+    assert lost["analysis_source"] == "artist" and lost["genre"] == "pop" and lost["energy"] == 0.7
+    assert lost["genre_conf"] == 0.5
+
+
+def test_no_preview_and_estimates_are_retried_next_sync(tmp_path):
+    sync, store, _ = make_sync(tmp_path, {"ok": "u"}, {"u": np.array([1.0], dtype=np.float32)})
+    sync.run([track("ok"), track("lost"), track("gone", artists="Nobody")], SyncProgress())
+    progress = SyncProgress()
+    sync.run([track("ok"), track("lost"), track("gone", artists="Nobody")], progress)
+    assert progress.total == 2  # "ok" is done; the estimate and the no-preview song are tried again
 
 
 def test_run_skips_already_analyzed(tmp_path):

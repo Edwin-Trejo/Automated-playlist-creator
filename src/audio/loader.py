@@ -1,5 +1,6 @@
 import os
 import tempfile
+from urllib.parse import urlparse
 
 import librosa
 import numpy as np
@@ -23,13 +24,19 @@ def decode_audio(data, suffix=".mp3"):
     return y.astype(np.float32)
 
 
+def audio_suffix(url):
+    """File type of a preview URL: Deezer serves .mp3, iTunes serves .m4a (decoded through ffmpeg)."""
+    suffix = os.path.splitext(urlparse(url).path)[1].lower()
+    return suffix if suffix in (".mp3", ".m4a", ".wav") else ".mp3"
+
+
 def download_audio(url, *, session=None):
     """Download a preview and return a decoded clip, or None if unusable."""
     resp = get_with_retry(url, session=session)
     if resp is None:
         return None
     try:
-        y = decode_audio(resp.content)
+        y = decode_audio(resp.content, suffix=audio_suffix(url))
     except Exception:
         return None
     if y.size == 0 or not np.any(y):

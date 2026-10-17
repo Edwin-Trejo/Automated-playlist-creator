@@ -32,12 +32,12 @@ def test_decode_trims_to_30_seconds_without_padding():
 
 def test_download_audio_rejects_silent_preview(monkeypatch):
     monkeypatch.setattr(loader, "get_with_retry", lambda url, session=None: FakeResp(content=b"mp3"))
-    monkeypatch.setattr(loader, "decode_audio", lambda data: np.zeros(SAMPLE_RATE, dtype=np.float32))
+    monkeypatch.setattr(loader, "decode_audio", lambda data, suffix: np.zeros(SAMPLE_RATE, dtype=np.float32))
     assert loader.download_audio("http://p/1.mp3") is None
 
 
 def test_download_audio_handles_decode_error(monkeypatch):
-    def boom(data):
+    def boom(data, suffix):
         raise ValueError("bad mp3")
     monkeypatch.setattr(loader, "get_with_retry", lambda url, session=None: FakeResp(content=b"x"))
     monkeypatch.setattr(loader, "decode_audio", boom)
@@ -52,5 +52,14 @@ def test_download_audio_returns_none_when_request_fails(monkeypatch):
 def test_download_audio_returns_clip(monkeypatch):
     clip = np.full(SAMPLE_RATE * 30, 0.1, dtype=np.float32)
     monkeypatch.setattr(loader, "get_with_retry", lambda url, session=None: FakeResp(content=b"mp3"))
-    monkeypatch.setattr(loader, "decode_audio", lambda data: clip)
+    monkeypatch.setattr(loader, "decode_audio", lambda data, suffix: clip)
     assert loader.download_audio("http://p/1.mp3") is clip
+
+
+def test_download_audio_decodes_itunes_previews_as_m4a(monkeypatch):
+    seen = []
+    monkeypatch.setattr(loader, "get_with_retry", lambda url, session=None: FakeResp(content=b"aac"))
+    monkeypatch.setattr(loader, "decode_audio", lambda data, suffix: seen.append(suffix) or np.ones(10, np.float32))
+    loader.download_audio("https://audio-ssl.itunes.apple.com/x/mzaf_1.plus.aac.p.m4a")
+    loader.download_audio("https://cdnt-preview.dzcdn.net/api/1/1/a/b/0/0/ab.mp3?hdnea=exp")
+    assert seen == [".m4a", ".mp3"]

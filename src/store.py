@@ -2,7 +2,10 @@ import sqlite3
 from pathlib import Path
 
 COLUMNS = ("spotify_id", "uri", "name", "artists", "preview_found", "genre", "genre_conf",
-           "danceability", "energy", "valence", "acousticness", "tempo", "model_version", "analyzed_at")
+           "danceability", "energy", "valence", "acousticness", "tempo", "model_version", "analyzed_at",
+           "analysis_source")
+# analysis_source: "audio" (preview analyzed by our models), "dataset" (Spotify's scores from dataset.csv)
+# or "artist" (estimated from the artist's other songs). preview_found = 1 means the song has usable values.
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS tracks (
@@ -41,6 +44,9 @@ class TrackStore:
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         with self._connect() as conn:
             conn.executescript(SCHEMA)
+            existing = {r["name"] for r in conn.execute("PRAGMA table_info(tracks)")}
+            if "analysis_source" not in existing:  # databases created before fallbacks existed
+                conn.execute("ALTER TABLE tracks ADD COLUMN analysis_source TEXT")
 
     def _connect(self):
         conn = sqlite3.connect(self.path, timeout=30)
@@ -71,6 +77,17 @@ class TrackStore:
     def ids_with_version(self, version):
         with self._connect() as conn:
             rows = conn.execute("SELECT spotify_id FROM tracks WHERE model_version = ?", (version,)).fetchall()
+        return {r["spotify_id"] for r in rows}
+
+    def ids_done(self, version):
+        """Songs that need no more work: analyzed from audio or dataset.csv with this model version.
+
+        Songs without a preview and artist-based estimates are left out, so every sync tries them again.
+        """
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT spotify_id FROM tracks WHERE model_version = ? AND preview_found = 1 "
+                "AND COALESCE(analysis_source, 'audio') != 'artist'", (version,)).fetchall()
         return {r["spotify_id"] for r in rows}
 
     @staticmethod

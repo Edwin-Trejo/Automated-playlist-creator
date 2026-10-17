@@ -14,7 +14,7 @@ from src.spotify_client import (add_items, create_playlist, current_user_id, fin
 
 bp = Blueprint("main", __name__)
 TRACK_FIELDS = ("spotify_id", "name", "artists", "genre", "genre_conf", "danceability",
-                "energy", "valence", "acousticness", "tempo", "score")
+                "energy", "valence", "acousticness", "tempo", "score", "analysis_source")
 
 
 def _state():
@@ -102,7 +102,8 @@ def sync(sp):
         return jsonify(error=f"Spotify error: {exc.msg}"), 502
     tracks = list(tracks.values())
     state.progress = SyncProgress()
-    syncer = LibrarySync(state.store, analyzer, find_preview=state.find_preview, download=state.download)
+    syncer = LibrarySync(state.store, analyzer, find_preview=state.find_preview, download=state.download,
+                         dataset=state.dataset)
     state.sync_thread = start_background_sync(tracks, syncer, state.progress)
     return jsonify(state.progress.to_dict()), 202
 

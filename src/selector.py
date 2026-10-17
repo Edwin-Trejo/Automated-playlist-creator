@@ -1,5 +1,7 @@
 from src.moods import FULL_RANGE
 
+ESTIMATE_PENALTY = 0.8  # songs estimated from their artist (never heard) rank below analyzed songs
+
 
 def _tempo_candidates(tempo):
     # Beat trackers often report half or double time; accept the likely octave too.
@@ -36,6 +38,8 @@ def select_tracks(tracks, targets, genres=None, size=25):
             distances.append(min(_distance(v, lo, hi) for v in inside))
         else:
             score = 1 - sum(distances) / len(distances) if distances else 1.0
+            if track.get("analysis_source") == "artist":
+                score *= ESTIMATE_PENALTY
             scored.append({**track, "score": round(score, 4)})
     scored.sort(key=lambda x: (-x["score"], -(x.get("genre_conf") or 0), x["name"]))
     return scored[:size]

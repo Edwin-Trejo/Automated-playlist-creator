@@ -10,6 +10,7 @@ from flask import Flask
 from src.audio.loader import download_audio
 from src.audio.preview import find_preview
 from src.config import DB_PATH
+from src.fallback import DatasetLookup
 from src.library_sync import SyncProgress
 from src.ml.analyzer import Analyzer
 from src.spotify_client import DEFAULT_REDIRECT, make_oauth
@@ -24,6 +25,7 @@ class AppState:
     spotify_factory: object
     find_preview: object
     download: object
+    dataset: object = None
     progress: SyncProgress = field(default_factory=SyncProgress)
     sync_thread: threading.Thread | None = None
     _analyzer: Analyzer | None = None
@@ -49,6 +51,7 @@ def create_app(test_config=None):
         spotify_factory=cfg.get("SPOTIFY_FACTORY", lambda auth: spotipy.Spotify(auth_manager=auth)),
         find_preview=cfg.get("SYNC_FIND_PREVIEW", find_preview),
         download=cfg.get("SYNC_DOWNLOAD", download_audio),
+        dataset=cfg["DATASET"] if "DATASET" in cfg else DatasetLookup(),  # loads dataset.csv on first use
     )
 
     from src.web.routes import bp

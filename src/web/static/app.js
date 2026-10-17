@@ -112,7 +112,8 @@ async function pollSync() {
   $("progress-bar").max = p.total || 1;
   $("progress-bar").value = p.done;
   $("progress-text").textContent =
-    `${p.done}/${p.total} · ${p.analyzed} analyzed · ${p.no_preview} no preview · ${p.failed} failed`;
+    `${p.done}/${p.total} · ${p.analyzed} analyzed · ${p.from_dataset} from Spotify data · ` +
+    `${p.estimated} estimated from artist · ${p.no_preview} no preview · ${p.failed} failed`;
   $("counts").textContent = `${p.counts.analyzed} analyzed · ${p.counts.no_preview} without preview (all sources)`;
   if (p.running) {
     $("sync-btn").disabled = true;
@@ -198,6 +199,13 @@ function renderResults(data) {
       const td = document.createElement("td");
       td.textContent = c;
       tr.appendChild(td);
+    }
+    if (t.analysis_source === "artist") {
+      const mark = document.createElement("span");
+      mark.className = "est";
+      mark.textContent = " est.";
+      mark.title = "No preview found: estimated from this artist's other songs";
+      tr.children[0].appendChild(mark);
     }
     const td = document.createElement("td");
     const rm = document.createElement("button");

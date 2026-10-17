@@ -86,6 +86,7 @@ def env(tmp_path):
         "ANALYZER_FACTORY": FakeAnalyzer,
         "SYNC_FIND_PREVIEW": lambda n, a: "http://p",
         "SYNC_DOWNLOAD": lambda url: np.ones(10, dtype="float32"),
+        "DATASET": None,
     })
     return app, app.test_client(), store, sp
 
