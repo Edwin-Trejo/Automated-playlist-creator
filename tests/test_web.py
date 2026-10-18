@@ -259,9 +259,29 @@ def test_dashboard_renders_controls(env):
         assert needle in html
 
 
-def test_server_port_follows_redirect_uri(monkeypatch):
-    from src.web.app import server_port
+def test_server_address_follows_redirect_uri(monkeypatch):
+    from src.web.app import server_address
+    monkeypatch.delenv("HOST", raising=False)
+    monkeypatch.delenv("PORT", raising=False)
     monkeypatch.setenv("SPOTIFY_REDIRECT_URI", "http://127.0.0.1:8888/callback")
-    assert server_port() == 8888
+    assert server_address() == ("127.0.0.1", 8888)
     monkeypatch.delenv("SPOTIFY_REDIRECT_URI")
-    assert server_port() == 5000
+    assert server_address() == ("127.0.0.1", 5000)
+
+
+def test_server_address_https_redirect_uses_port_setting(monkeypatch):
+    from src.web.app import server_address
+    monkeypatch.setenv("SPOTIFY_REDIRECT_URI", "https://playlist.example.ts.net/callback")
+    monkeypatch.delenv("PORT", raising=False)
+    monkeypatch.setenv("HOST", "0.0.0.0")
+    assert server_address() == ("0.0.0.0", 5000)
+    monkeypatch.setenv("PORT", "6000")
+    assert server_address() == ("0.0.0.0", 6000)
+
+
+def test_session_cookie_secure_only_behind_https(monkeypatch, tmp_path):
+    cfg = {"TESTING": True, "STORE": TrackStore(tmp_path / "t.db"), "DATASET": None}
+    monkeypatch.setenv("SPOTIFY_REDIRECT_URI", "http://127.0.0.1:5000/callback")
+    assert create_app(cfg).config["SESSION_COOKIE_SECURE"] is False
+    monkeypatch.setenv("SPOTIFY_REDIRECT_URI", "https://playlist.example.ts.net/callback")
+    assert create_app(cfg).config["SESSION_COOKIE_SECURE"] is True

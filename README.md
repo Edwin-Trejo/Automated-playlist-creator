@@ -57,7 +57,7 @@ Random guessing would get about 5%. Most mistakes are between similar-sounding g
    pip install -r requirements.txt
    ```
 2. **Spotify app** at https://developer.spotify.com/dashboard
-   - Add a redirect URI such as `http://127.0.0.1:5000/callback` (Spotify rejects `localhost`). The app serves on whatever port this URI uses.
+   - Add a redirect URI such as `http://127.0.0.1:5000/callback` (Spotify rejects `localhost`, and other hosts must use HTTPS; see Deploy). Locally, the app serves on whatever port this URI uses.
    - Development Mode requires the app owner to have Spotify Premium. Other listeners must be added under *User Management* (max 5).
    - Development Mode only lets the app read songs from playlists you **own or collaborate on**, so playlists you only follow can't be used as sources.
 3. **`.env`**: copy `.env.example` to `.env` and fill in `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REDIRECT_URI` and a random `FLASK_SECRET_KEY`.
@@ -85,6 +85,20 @@ Open the redirect URI's host (e.g. http://127.0.0.1:5000) and log in with Spotif
    - By default, songs are **added to your existing playlist for that mood** ("Happy", or "Happy · Rock" with a genre filter). The preview leaves out songs already in it, so only new ones are added. The app remembers the playlist, so renaming it in Spotify is fine; if you delete it, the next save creates a new one.
    - Check **Create a new playlist** to start a separate one ("Happy (2)"). Future songs are then added to that one.
 
+## Deploy (Proxmox container + Tailscale)
+
+The app runs with Docker Compose and is reached from your phone over Tailscale. Spotify only allows `http://` redirect URIs on `127.0.0.1`, so `compose.yml` runs two containers:
+- **`tailscale`** joins your tailnet as its own machine (`TS_HOSTNAME`, default `playlist`) and serves `https://playlist.<tailnet>.ts.net` with a valid certificate (`deploy/serve.json`). Only devices on your tailnet can open it.
+- **`app`** (built from the `Dockerfile`: Python 3.11, ffmpeg, the models) shares the tailscale container's network and listens on `127.0.0.1:5000`, so nothing is exposed on the LAN. The song cache is kept in the `app-data` volume, so rebuilds keep it.
+
+1. **Server:** any Linux host with Docker (e.g. a Proxmox container with nesting enabled), 2 cores, 2 GB RAM, 16 GB disk. The image is about 1.7 GB.
+2. **Tailscale:** in the admin console, turn on **MagicDNS** and **HTTPS certificates** (DNS page), and create an **auth key** (Settings → Keys).
+3. **Secrets:** clone the repo, copy `.env.example` to `.env` (`chmod 600`), and fill in `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, a random `FLASK_SECRET_KEY`, `TS_AUTHKEY`, and `SPOTIFY_REDIRECT_URI=https://playlist.<tailnet>.ts.net/callback`. The `.env` stays on the server and is never committed or copied into the image.
+4. **Spotify dashboard:** add the same `https://…ts.net/callback` redirect URI. Keep the `127.0.0.1` one for local development.
+5. **Start:** `docker compose up -d --build`. **Update:** `git pull && docker compose up -d --build`.
+
+Logs: `docker compose logs -f app`. To skip re-analyzing your library, copy your local cache in: `docker compose cp data/app.db app:/data/app.db`, then `docker compose restart app`.
+
 ## Tests
 
 ```
@@ -104,11 +118,12 @@ src/store.py    SQLite cache (songs, their sources, mood playlists) · src/libra
 src/moods.py    mood presets + sliders · src/selector.py track ranking · src/playlists.py playlist names
 src/spotify_client.py   Spotify login and playlist endpoints
 src/legacy/     the original model trained on Spotify audio-features (reference only)
+Dockerfile, compose.yml, deploy/serve.json   server deploy (app + Tailscale HTTPS)
 ```
 
 ## Roadmap
 
-- **Next:** self-host on a Proxmox container and use it from phones over Tailscale (HTTPS login, phone-friendly layout; single user first).
+- **Now:** self-hosting on a Proxmox container over Tailscale (see Deploy). Next is checking the phone layout.
 - **Better genres:** merge the genres the model confuses most (e.g. House / Techno / EDM), or add more songs per genre.
 - **Dataset lookup:** if a song is already in `dataset.csv`, use its real Spotify mood scores and only predict the rest.
 - **ReccoBeats hybrid:** use ReccoBeats audio features as the primary source, keep these models as the fallback, and benchmark them against it.

@@ -1,0 +1,15 @@
+.env
+.git
+.venv
+.cache
+**/.cache
+**/__pycache__
+.pytest_cache
+.superpowers
+data/app.db
+data/features
+data/genres
+data/jazz
+notebooks
+docs
+tests

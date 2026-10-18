@@ -1,3 +1,4 @@
+import logging
 import os
 import threading
 from dataclasses import dataclass, field
@@ -16,6 +17,7 @@ from src.ml.analyzer import Analyzer
 from src.spotify_client import DEFAULT_REDIRECT, make_oauth
 from src.store import TrackStore
 
+log = logging.getLogger(__name__)
 
 @dataclass
 class AppState:
@@ -39,7 +41,15 @@ class AppState:
 def create_app(test_config=None):
     load_dotenv()
     app = Flask(__name__)
-    app.config.update(SECRET_KEY=os.getenv("FLASK_SECRET_KEY") or os.urandom(24).hex())
+    secret = os.getenv("FLASK_SECRET_KEY")
+    if not secret:
+        log.warning("FLASK_SECRET_KEY is not set: using a random key, so every restart logs you out.")
+    app.config.update(
+        SECRET_KEY=secret or os.urandom(24).hex(),
+        # Behind HTTPS (tailscale serve), only send the login cookie over HTTPS.
+        SESSION_COOKIE_SECURE=redirect_uri().startswith("https://"),
+        SESSION_COOKIE_SAMESITE="Lax",
+    )
     if test_config:
         app.config.update(test_config)
 
@@ -59,11 +69,24 @@ def create_app(test_config=None):
     return app
 
 
-def server_port():
-    """Serve on the port in SPOTIFY_REDIRECT_URI so the OAuth callback reaches this app."""
-    return urlparse(os.getenv("SPOTIFY_REDIRECT_URI", DEFAULT_REDIRECT)).port or 5000
+def redirect_uri():
+    return os.getenv("SPOTIFY_REDIRECT_URI", DEFAULT_REDIRECT)
+
+
+def server_address():
+    """HOST and PORT from .env. Without PORT, use the redirect URI's port so the OAuth callback reaches
+    this app locally. An HTTPS redirect (tailscale serve) has no port, so it falls back to 5000."""
+    host = os.getenv("HOST", "127.0.0.1")
+    port = int(os.getenv("PORT") or urlparse(redirect_uri()).port or 5000)
+    return host, port
 
 
 if __name__ == "__main__":
+    from waitress import serve
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     load_dotenv()
-    create_app().run(host="127.0.0.1", port=server_port(), debug=False)
+    host, port = server_address()
+    log.info("Serving on http://%s:%d", host, port)
+    # One process with threads: the background sync and its progress live in this process's memory.
+    serve(create_app(), host=host, port=port, threads=8)

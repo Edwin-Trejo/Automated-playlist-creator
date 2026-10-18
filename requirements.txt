@@ -7,4 +7,5 @@ lightgbm
 onnxruntime
 librosa
 soundfile
+waitress
 pytest

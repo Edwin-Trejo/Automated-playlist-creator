@@ -1,0 +1,33 @@
+# Run on the server: docker compose up -d --build
+# Secrets come from .env next to this file (never committed). See .env.example.
+services:
+  # Joins your tailnet and serves https://<TS_HOSTNAME>.<tailnet>.ts.net -> the app on port 5000.
+  # Userspace networking, so the host needs no /dev/net/tun.
+  tailscale:
+    image: tailscale/tailscale:stable
+    hostname: ${TS_HOSTNAME:-playlist}
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY:-}
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "true"
+      TS_SERVE_CONFIG: /config/serve.json
+    volumes:
+      - tailscale-state:/var/lib/tailscale
+      - ./deploy/serve.json:/config/serve.json:ro
+    restart: unless-stopped
+
+  app:
+    build: .
+    env_file: .env
+    # Shares the tailscale container's network, so tailscale reaches the app on 127.0.0.1:5000
+    # and nothing is exposed on the LAN.
+    network_mode: service:tailscale
+    depends_on:
+      - tailscale
+    volumes:
+      - app-data:/data
+    restart: unless-stopped
+
+volumes:
+  tailscale-state:
+  app-data:
