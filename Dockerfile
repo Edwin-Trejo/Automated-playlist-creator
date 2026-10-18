@@ -16,7 +16,8 @@ COPY data/dataset.csv data/genre_groups.json data/
 # The song cache lives in a volume so rebuilds keep it.
 RUN useradd --system --uid 1000 app && mkdir /data && chown app /data
 USER app
-ENV PYTHONUNBUFFERED=1 DB_PATH=/data/app.db
+# librosa's numba functions cache compiled code; site-packages isn't writable for the app user.
+ENV PYTHONUNBUFFERED=1 DB_PATH=/data/app.db NUMBA_CACHE_DIR=/tmp/numba
 VOLUME /data
 
 CMD ["python", "-m", "src.web.app"]
