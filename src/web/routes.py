@@ -6,7 +6,7 @@ from spotipy.exceptions import SpotifyException
 
 from src.library_sync import LIKED, LibrarySync, SyncProgress, iter_source_tracks, start_background_sync
 from src.ml.analyzer import ModelsMissingError
-from src.moods import FULL_RANGE, MOODS, build_targets
+from src.moods import MOODS
 from src.playlists import playlist_description, playlist_key, playlist_name
 from src.selector import select_tracks
 from src.spotify_client import (add_items, create_playlist, current_user_id, find_playlist, playlist_image,
@@ -56,8 +56,7 @@ def index():
         return render_template("index.html")
     store = _state().store
     genres = sorted({t["genre"] for t in store.analyzed_tracks() if t["genre"]})
-    app_data = {"features": list(FULL_RANGE)}
-    return render_template("dashboard.html", counts=store.counts(), moods=list(MOODS), genres=genres, app_data=app_data)
+    return render_template("dashboard.html", counts=store.counts(), moods=list(MOODS), genres=genres)
 
 
 @bp.get("/login")
@@ -137,8 +136,24 @@ def library():
     return jsonify(tracks=_state().store.analyzed_tracks())
 
 
+def _playlist_kind(body):
+    """(mood, genres) for a mood playlist or a genre playlist, never both. Raises ValueError if incomplete."""
+    mode = body.get("mode") or ("mood" if body.get("mood") else "genre")
+    if mode == "mood":
+        mood = body.get("mood")
+        if mood not in MOODS:
+            raise ValueError("Pick a mood.")
+        return mood, []
+    if mode == "genre":
+        genres = [g for g in body.get("genres") or [] if isinstance(g, str) and g.strip()]
+        if not genres:
+            raise ValueError("Pick at least one genre.")
+        return None, genres
+    raise ValueError(f"Unknown mode: {mode}")
+
+
 def _target_playlist(sp, mood, genres, playlists=None):
-    """The existing Spotify playlist this mood + genre filter saves to, or None if there isn't one yet."""
+    """The existing Spotify playlist this mood or genre set saves to, or None if there isn't one yet."""
     saved = _state().store.get_playlist(playlist_key(mood, genres)) or {}
     playlists = user_playlists(sp) if playlists is None else playlists
     return find_playlist(playlists, current_user_id(sp), saved.get("playlist_id"), playlist_name(mood, genres))
@@ -147,13 +162,15 @@ def _target_playlist(sp, mood, genres, playlists=None):
 @bp.post("/generate")
 def generate():
     body = request.get_json(silent=True) or {}
-    mood, genres = body.get("mood"), body.get("genres") or []
     try:
-        targets = build_targets(mood, body.get("adjust"))
+        mood, genres = _playlist_kind(body)
         size = max(1, min(int(body.get("size", 25)), 100))
     except (ValueError, TypeError) as exc:
         return jsonify(error=str(exc)), 400
-    tracks = _state().store.analyzed_tracks(_sources(body))
+    store = _state().store
+    tracks = store.analyzed_tracks(_sources(body))
+    # Moods are ranked against every analyzed song, so "sad" means the same whichever sources are picked.
+    reference = store.analyzed_tracks() if mood else None
     target ={"name": playlist_name(mood, genres), "url": None, "exists": False, "already_in": 0}
     sp = None if body.get("new_playlist") else _spotify()
     if sp is not None:
@@ -167,7 +184,7 @@ def generate():
                               already_in=len(in_playlist))
         except SpotifyException as exc:
             return jsonify(error=f"Spotify error: {exc.msg}"), 502
-    tracks = select_tracks(tracks, targets, genres or None, size)
+    tracks = select_tracks(tracks, mood, genres, size, reference)
     return jsonify(tracks=[{k: t.get(k) for k in TRACK_FIELDS} for t in tracks],
                    matched=len(tracks), requested=size, target=target)
 
@@ -179,7 +196,10 @@ def save_playlist(sp):
     rows = _state().store.get_many(list(body.get("track_ids") or []))
     if not rows:
         return jsonify(error="No songs to save."), 400
-    mood, genres = body.get("mood"), body.get("genres") or []
+    try:
+        mood, genres = _playlist_kind(body)
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
     name, description = playlist_name(mood, genres), playlist_description(mood, genres)
     uris = [r["uri"] for r in rows]
     try:
@@ -197,6 +217,6 @@ def save_playlist(sp):
                       "created": True, "added": len(uris), "total": len(uris)}
     except SpotifyException as exc:
         return jsonify(error=f"Spotify error: {exc.msg}"), 502
-    # The newest playlist for this mood + genres is where the next "add" goes.
+    # The newest playlist for this mood or genre set is where the next "add" goes.
     _state().store.set_playlist(playlist_key(mood, genres), result["id"], result["name"], result["url"])
     return jsonify(**result, description=description)

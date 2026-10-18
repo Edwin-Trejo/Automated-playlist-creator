@@ -3,6 +3,7 @@
   --accent: #1db954; --accent-text: #04140a; --border: #2a2f3a; --error: #ff6b6b;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; } /* layout classes like .row must not un-hide elements */
 body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, sans-serif; }
 main { max-width: 960px; margin: 0 auto; padding: 16px; }
 .topbar { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); }
@@ -21,24 +22,13 @@ button:disabled { opacity: .5; cursor: default; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { background: transparent; border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; }
 .chip.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
-.slider { display: grid; grid-template-columns: 110px 52px 1fr 52px 110px 28px; gap: 8px; align-items: center; margin: 6px 0;
-          grid-template-areas: "label less range more value reset"; }
-.slider .label { grid-area: label; }
-.slider .end { color: var(--muted); font-size: 13px; }
-.slider .less { grid-area: less; text-align: right; }
-.slider .more { grid-area: more; }
-/* Centered slider: plain track with a middle mark (no left-to-right fill, which would suggest "less"). */
-.slider input { grid-area: range; -webkit-appearance: none; appearance: none; height: 4px; border-radius: 2px; cursor: pointer;
-                background: linear-gradient(var(--muted), var(--muted)) center / 2px 12px no-repeat, var(--border); }
-.slider input::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--text); }
-.slider input::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 50%; background: var(--text); }
-.slider.changed input::-webkit-slider-thumb { background: var(--accent); }
-.slider.changed input::-moz-range-thumb { background: var(--accent); }
-.slider .value { grid-area: value; color: var(--muted); }
-.slider .reset { grid-area: reset; visibility: hidden; }
-.slider.changed .value { color: var(--accent); }
-.slider.changed .reset { visibility: visible; }
-input[type=range] { accent-color: var(--accent); width: 100%; }
+.generate-row { margin-top: 16px; }
+/* Sync sits under the source list and sticks to the bottom of the screen while the library card is in view. */
+.sync-bar { position: sticky; bottom: 0; z-index: 1; background: var(--card); border-top: 1px solid var(--border);
+            margin: 8px -20px -16px; padding: 12px 20px; border-radius: 0 0 12px 12px;
+            display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.sync-bar #progress { flex: 1 1 220px; min-width: 0; }
+.sync-bar #sync-error { flex-basis: 100%; margin: 0; }
 input[type=number] { width: 70px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; }
 progress { width: 100%; accent-color: var(--accent); }
 .table-wrap { overflow-x: auto; }
@@ -68,7 +58,21 @@ th { color: var(--muted); font-weight: 500; }
 .link { background: none; color: var(--accent); padding: 4px 0; margin-bottom: 8px; }
 .est { color: var(--muted); font-size: 12px; cursor: help; }
 @media (max-width: 600px) {
-  .slider { grid-template-columns: 52px 1fr 52px 28px; row-gap: 2px;
-            grid-template-areas: "label label value reset" "less range more ."; }
-  .slider .value { text-align: right; }
+  .card { padding: 14px 16px; }
+  .sync-bar { margin: 8px -16px -14px; padding: 10px 16px; }
+  .sync-bar #sync-btn { flex: 1 1 100%; padding: 12px 16px; }
+  /* Preview: each song is a card (name, artist, genre, stats on one line) with a big remove button. */
+  #results thead { display: none; }
+  #results table, #results tbody { display: block; }
+  #results tr { display: grid; grid-template-columns: repeat(4, auto) 1fr 44px; column-gap: 12px; row-gap: 2px;
+                padding: 10px 0; border-bottom: 1px solid var(--border); }
+  #results td { border: 0; padding: 0; white-space: normal; min-width: 0; }
+  #results .c-name { grid-row: 1; grid-column: 1 / 6; font-weight: 600; }
+  #results .c-artist { grid-row: 2; grid-column: 1 / 6; color: var(--muted); }
+  #results .c-genre { grid-row: 3; grid-column: 1 / 6; color: var(--muted); font-size: 13px; }
+  #results .c-stat { grid-row: 4; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  #results .c-stat::before { content: attr(data-label) " "; }
+  #results .c-rm { grid-row: 1 / 5; grid-column: 6; align-self: center; }
+  #results .remove { width: 44px; height: 44px; padding: 0; font-size: 24px; border-radius: 50%; background: var(--border); color: var(--text); }
+  .table-wrap { overflow-x: visible; }
 }

@@ -1,5 +1,4 @@
-const FEATURES = window.APP.features;
-const state = { mood: null, tracks: [], genres: [], savedMood: null, target: null, sources: [], showAllSources: false };
+const state = { mode: null, mood: null, tracks: [], saved: null, target: null, sources: [], showAllSources: false };
 const $ = (id) => document.getElementById(id);
 
 async function api(url, body) {
@@ -12,72 +11,39 @@ async function api(url, body) {
   return data;
 }
 
-// ---- sliders: one per feature, from -1 (less) to +1 (more); the middle keeps the mood as it is ----
-const SLIDER_TEXT = {
-  danceability: ["Danceability", "less", "more"],
-  energy: ["Energy", "less", "more"],
-  valence: ["Happiness", "sadder", "happier"],
-  tempo: ["Tempo", "slower", "faster"],
-};
+// ---- "Make a playlist by": Mood or Genre; the next options appear once one is picked ----
+const MODE_KEY = "playlist-creator.mode";
 
-function buildSliders() {
-  const box = $("sliders");
-  for (const f of FEATURES) {
-    const [label, less, more] = SLIDER_TEXT[f] || [f, "less", "more"];
-    box.insertAdjacentHTML("beforeend", `
-      <div class="slider" data-feature="${f}" data-less="${less}" data-more="${more}">
-        <span class="label">${label}</span>
-        <span class="end less">${less}</span>
-        <input type="range" min="-1" max="1" step="0.05" value="0" aria-label="${label}: ${less} to ${more}">
-        <span class="end more">${more}</span>
-        <span class="value"></span>
-        <button type="button" class="icon reset" title="Reset ${label}" aria-label="Reset ${label}">×</button>
-      </div>`);
+function selectMode(mode, remember = true) {
+  state.mode = mode;
+  document.querySelectorAll("#modes .chip").forEach((b) => b.classList.toggle("active", b.dataset.mode === mode));
+  $("mood-step").hidden = mode !== "mood";
+  $("genre-step").hidden = mode !== "genre";
+  $("generate-row").hidden = !mode;
+  $("results").hidden = true; // a preview from the other mode would save to the wrong playlist
+  if (remember) {
+    try { localStorage.setItem(MODE_KEY, mode); } catch (e) { /* not remembered */ }
   }
-  box.addEventListener("input", (e) => {
-    const row = e.target.closest(".slider");
-    if (row) updateLabel(row);
-  });
-  box.addEventListener("click", (e) => {
-    if (!e.target.classList.contains("reset")) return;
-    const row = e.target.closest(".slider");
-    row.querySelector("input").value = 0;
-    updateLabel(row);
-  });
-  resetSliders();
 }
 
-function updateLabel(row) {
-  const v = Number(row.querySelector("input").value);
-  const size = Math.abs(v);
-  const word = v < 0 ? row.dataset.less : row.dataset.more;
-  const text = size < 0.05 ? (state.mood ? "as the mood" : "any")
-    : size < 0.4 ? `a bit ${word}` : size < 0.8 ? word : `much ${word}`;
-  row.querySelector(".value").textContent = text;
-  row.classList.toggle("changed", size >= 0.05);
+function savedMode() {
+  try {
+    const mode = localStorage.getItem(MODE_KEY);
+    if (mode === "mood" || mode === "genre") return mode;
+  } catch (e) { /* storage unavailable */ }
+  return null;
 }
 
-function resetSliders() {
-  document.querySelectorAll(".slider").forEach((row) => {
-    row.querySelector("input").value = 0;
-    updateLabel(row);
-  });
-}
-
-function readSliders() {
-  const out = {};
-  document.querySelectorAll(".slider").forEach((row) => {
-    const v = Number(row.querySelector("input").value);
-    if (v) out[row.dataset.feature] = v;
-  });
-  return out;
-}
-
-// ---- mood chips ----
 function selectMood(mood) {
   state.mood = state.mood === mood ? null : mood;
   document.querySelectorAll("#moods .chip").forEach((b) => b.classList.toggle("active", b.dataset.mood === state.mood));
-  resetSliders();
+}
+
+// What the current picks ask for: a mood playlist or a genre playlist, never both.
+function playlistChoice() {
+  if (state.mode === "mood") return { mode: "mood", mood: state.mood, genres: [] };
+  const genres = [...document.querySelectorAll("#genres input:checked")].map((i) => i.value);
+  return { mode: "genre", mood: null, genres };
 }
 
 // ---- sync ----
@@ -232,10 +198,17 @@ function renderResults(data) {
   body.replaceChildren();
   state.tracks.forEach((t, i) => {
     const tr = document.createElement("tr");
-    const cells = [t.name, t.artists, t.genre, fmt(t.danceability), fmt(t.energy), fmt(t.valence), fmt(t.tempo, 0)];
-    for (const c of cells) {
+    // Classes and labels let the phone layout turn each row into a card (see style.css).
+    const cells = [
+      ["c-name", t.name], ["c-artist", t.artists], ["c-genre", t.genre],
+      ["c-stat", fmt(t.danceability), "Dance"], ["c-stat", fmt(t.energy), "Energy"],
+      ["c-stat", fmt(t.valence), "Happy"], ["c-stat", fmt(t.tempo, 0), "BPM"],
+    ];
+    for (const [cls, text, label] of cells) {
       const td = document.createElement("td");
-      td.textContent = c;
+      td.className = cls;
+      td.textContent = text;
+      if (label) td.dataset.label = label;
       tr.appendChild(td);
     }
     if (t.analysis_source === "artist") {
@@ -246,10 +219,12 @@ function renderResults(data) {
       tr.children[0].appendChild(mark);
     }
     const td = document.createElement("td");
+    td.className = "c-rm";
     const rm = document.createElement("button");
-    rm.className = "icon";
+    rm.className = "icon remove";
     rm.textContent = "×";
     rm.title = "Remove from playlist";
+    rm.setAttribute("aria-label", `Remove ${t.name}`);
     rm.addEventListener("click", () => {
       state.tracks.splice(i, 1);
       renderResults({ matched: state.tracks.length, requested: data.requested });
@@ -261,11 +236,13 @@ function renderResults(data) {
   const t = state.target;
   const adding = t && t.exists && !$("new-playlist").checked;
   if (adding && state.tracks.length === 0) {
-    $("results-note").textContent = `Every matching song is already in “${t.name}”. Like more songs and sync, or adjust the filters.`;
+    $("results-note").textContent = `Every matching song is already in “${t.name}”. Like more songs and sync, or add more sources.`;
   } else {
     const kind = adding ? "new songs" : "songs";
+    const tip = state.saved && state.saved.mode === "genre"
+      ? "Pick more genres or sync more sources." : "Sync more sources to find more.";
     $("results-note").textContent = data.matched < data.requested
-      ? `Only ${state.tracks.length} ${kind} match. Try moving the sliders or removing genre filters.`
+      ? `Only ${state.tracks.length} ${kind} match. ${tip}`
       : `${state.tracks.length} ${kind}`;
   }
   $("save-btn").disabled = state.tracks.length === 0;
@@ -295,7 +272,7 @@ function renderTarget() {
 }
 
 async function generate() {
-  const genres = [...document.querySelectorAll("#genres input:checked")].map((i) => i.value);
+  const choice = playlistChoice();
   const sources = selectedSources();
   if (!sources.length) {
     $("results").hidden = false;
@@ -305,12 +282,10 @@ async function generate() {
   $("generate-btn").disabled = true;
   try {
     const data = await api("/generate", {
-      mood: state.mood, adjust: readSliders(), genres, sources, size: Number($("size").value),
-      new_playlist: $("new-playlist").checked,
+      ...choice, sources, size: Number($("size").value), new_playlist: $("new-playlist").checked,
     });
     state.tracks = data.tracks;
-    state.genres = genres;
-    state.savedMood = state.mood;
+    state.saved = choice; // Save uses the picks this preview was made from
     state.target = data.target;
     renderTarget();
     renderResults(data);
@@ -328,7 +303,7 @@ async function save() {
   out.textContent = "Saving…";
   try {
     const d = await api("/playlist/save", {
-      mood: state.savedMood, genres: state.genres, track_ids: state.tracks.map((t) => t.spotify_id),
+      ...state.saved, track_ids: state.tracks.map((t) => t.spotify_id),
       new_playlist: $("new-playlist").checked,
     });
     out.replaceChildren();
@@ -355,7 +330,8 @@ async function save() {
 }
 
 // ---- wire up ----
-buildSliders();
+document.querySelectorAll("#modes .chip").forEach((b) => b.addEventListener("click", () => selectMode(b.dataset.mode)));
+if (savedMode()) selectMode(savedMode(), false);
 document.querySelectorAll("#moods .chip").forEach((b) => b.addEventListener("click", () => selectMood(b.dataset.mood)));
 $("sync-btn").addEventListener("click", startSync);
 $("generate-btn").addEventListener("click", generate);

@@ -1,7 +1,6 @@
 import json
 
 from src.fallback import DatasetLookup, artist_estimate
-from src.moods import FULL_RANGE
 from src.selector import select_tracks
 
 HEADER = ",track_id,artists,album_name,track_name,popularity,duration_ms,explicit,danceability,energy,key,loudness," \
@@ -53,6 +52,6 @@ def test_estimated_songs_rank_below_equally_good_analyzed_ones():
     base = {"genre": "Pop", "genre_conf": 0.5, "danceability": 0.85, "energy": 0.5, "valence": 0.5, "tempo": 120.0}
     tracks = [{**base, "spotify_id": "est", "name": "a", "analysis_source": "artist"},
               {**base, "spotify_id": "real", "name": "b", "analysis_source": "audio"}]
-    out = select_tracks(tracks, {**FULL_RANGE, "danceability": (0.7, 1.0)})
+    out = select_tracks(tracks, genres=["Pop"])
     assert [t["spotify_id"] for t in out] == ["real", "est"]
-    assert out[1]["score"] == 0.8
+    assert out[1]["score"] == 0.4  # genre_conf 0.5 x ESTIMATE_PENALTY

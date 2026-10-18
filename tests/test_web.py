@@ -91,9 +91,12 @@ def env(tmp_path):
     return app, app.test_client(), store, sp
 
 
-def seed(store, sid="t1"):
+def seed(store, sid="t1", **kw):
     store.upsert({"spotify_id": sid, "uri": f"spotify:track:{sid}", "name": "Song", "artists": "A",
-                  "preview_found": 1, "model_version": "v1", **ANALYSIS})
+                  "preview_found": 1, "model_version": "v1", **ANALYSIS, **kw})
+
+
+DISCO = {"mode": "genre", "genres": ["disco"]}
 
 
 def test_index_shows_login_when_logged_out(env):
@@ -139,7 +142,7 @@ def test_generate_uses_only_selected_sources(env):
     seed(store, "t2")
     store.set_source_tracks("liked", ["t1"])
     store.set_source_tracks("mine", ["t2"])
-    ids = lambda srcs: [t["spotify_id"] for t in client.post("/generate", json={"sources": srcs}).get_json()["tracks"]]
+    ids = lambda srcs: [t["spotify_id"] for t in client.post("/generate", json={**DISCO, "sources": srcs}).get_json()["tracks"]]
     assert ids(["liked"]) == ["t1"]
     assert sorted(ids(["liked", "mine"])) == ["t1", "t2"]
     assert ids([]) == []
@@ -157,25 +160,38 @@ def test_sync_requires_login(env):
     assert client.post("/sync").status_code == 401
 
 
-def test_generate_returns_matching_tracks(env):
+def test_generate_mood_ranks_against_the_library(env):
     _, client, store, _ = env
-    seed(store)
-    data = client.post("/generate", json={"mood": "dance", "size": 10}).get_json()
+    seed(store, "t1")  # danceable, energetic
+    seed(store, "t0", danceability=0.2, energy=0.2, valence=0.1, tempo=80.0)
+    data = client.post("/generate", json={"mode": "mood", "mood": "dance", "size": 10}).get_json()
     assert [t["spotify_id"] for t in data["tracks"]] == ["t1"]
     assert data["matched"] == 1
+    sad = client.post("/generate", json={"mode": "mood", "mood": "sad"}).get_json()
+    assert [t["spotify_id"] for t in sad["tracks"]] == ["t0"]
 
 
-def test_generate_applies_slider_adjustments(env):
+def test_generate_mood_mode_ignores_genres(env):
     _, client, store, _ = env
-    seed(store)  # danceability 0.8
-    assert len(client.post("/generate", json={"adjust": {"danceability": -1}}).get_json()["tracks"]) == 0
-    assert len(client.post("/generate", json={"adjust": {"danceability": 1}}).get_json()["tracks"]) == 1
-    assert client.post("/generate", json={"adjust": {"danceability": "x"}}).status_code == 400
+    seed(store, "t1")
+    seed(store, "t0", genre="rock", danceability=0.2, energy=0.2, valence=0.1)
+    data = client.post("/generate", json={"mode": "mood", "mood": "sad", "genres": ["disco"]}).get_json()
+    assert [t["spotify_id"] for t in data["tracks"]] == ["t0"] and data["target"]["name"] == "Sad"
 
 
-def test_generate_rejects_unknown_mood(env):
+def test_generate_genre_mode(env):
+    _, client, store, _ = env
+    seed(store, "t1")
+    seed(store, "t2", genre="rock")
+    data = client.post("/generate", json=DISCO).get_json()
+    assert [t["spotify_id"] for t in data["tracks"]] == ["t1"] and data["target"]["name"] == "disco"
+
+
+def test_generate_rejects_incomplete_or_unknown_choices(env):
     _, client, _, _ = env
-    assert client.post("/generate", json={"mood": "angry"}).status_code == 400
+    for body in [{"mood": "angry"}, {"mode": "mood"}, {"mode": "genre"}, {"mode": "genre", "genres": []}, {},
+                 {"mode": "both", "mood": "sad"}]:
+        assert client.post("/generate", json=body).status_code == 400, body
 
 
 def test_save_creates_playlist_named_after_mood(env):
@@ -187,11 +203,14 @@ def test_save_creates_playlist_named_after_mood(env):
     assert sp.posts[1] == ("playlists/pl1/items", {"uris": ["spotify:track:t1"]})
 
 
-def test_save_name_includes_selected_genres(env):
+def test_save_genre_playlist_is_named_after_genres(env):
     _, client, store, sp = env
     seed(store)
-    data = client.post("/playlist/save", json={"mood": "happy", "genres": ["disco"], "track_ids": ["t1"]}).get_json()
-    assert data["name"] == "Happy · disco"
+    data = client.post("/playlist/save", json={"mode": "genre", "genres": ["House", "disco"], "track_ids": ["t1"]}).get_json()
+    assert data["name"] == "disco · House"
+    mood = client.post("/playlist/save", json={"mode": "mood", "mood": "happy", "genres": ["disco"], "track_ids": ["t1"]})
+    assert mood.get_json()["name"] == "Happy"
+    assert client.post("/playlist/save", json={"mode": "genre", "track_ids": ["t1"]}).status_code == 400
 
 
 def test_save_adds_only_new_songs_to_existing_playlist(env):
@@ -238,11 +257,11 @@ def test_generate_skips_songs_already_in_target_playlist(env):
     _, client, store, sp = env
     seed(store, "t1")
     seed(store, "t2")
-    sp.add_playlist("pl9", "Dance", items=["t1"])
-    data = client.post("/generate", json={"mood": "dance"}).get_json()
+    sp.add_playlist("pl9", "disco", items=["t1"])
+    data = client.post("/generate", json=DISCO).get_json()
     assert [t["spotify_id"] for t in data["tracks"]] == ["t2"]
-    assert data["target"] == {"name": "Dance", "url": "https://open.spotify.com/playlist/pl9", "exists": True, "already_in": 1}
-    data = client.post("/generate", json={"mood": "dance", "new_playlist": True}).get_json()
+    assert data["target"] == {"name": "disco", "url": "https://open.spotify.com/playlist/pl9", "exists": True, "already_in": 1}
+    data = client.post("/generate", json={**DISCO, "new_playlist": True}).get_json()
     assert len(data["tracks"]) == 2 and data["target"]["exists"] is False
 
 
@@ -255,7 +274,8 @@ def test_dashboard_renders_controls(env):
     _, client, store, _ = env
     seed(store)
     html = client.get("/").data.decode()
-    for needle in ['id="sync-btn"', 'data-mood="dance"', 'value="disco"', 'id="generate-btn"', "app.js"]:
+    for needle in ['id="sync-btn"', 'data-mode="mood"', 'data-mode="genre"', 'data-mood="dance"', 'value="disco"',
+                   'id="generate-btn"', "app.js"]:
         assert needle in html
 
 

@@ -17,9 +17,9 @@ Librosa ─► tempo, loudness, beat strength ───────────�
    ▼
 SQLite cache (each song analyzed once, remembers which source it came from)
    ▼
-Mood preset + less/more sliders + genre filter ─► selector ─► preview table
+Mood (ranked against your whole library)  or  Genre ─► selector ─► preview
    ▼
-Add new songs to the mood's playlist (or create it)
+Add new songs to that mood's or genre's playlist (or create it)
 ```
 
 - **Why train mood models?** Spotify stopped serving `audio-features` (danceability, energy, valence…) to new apps in Nov 2024. This project re-creates them: `data/dataset.csv` holds Spotify's original scores for ~114k songs, and the models learn to predict those scores from each song's audio.
@@ -79,11 +79,12 @@ python -m src.web.app
 Open the redirect URI's host (e.g. http://127.0.0.1:5000) and log in with Spotify.
 
 1. **Sources:** Liked Songs is selected by default. Check any of your own playlists to use them too, then click **Sync selected**. The first sync analyzes every song once (a few seconds per song); later syncs only process new songs.
-2. **Mood:** pick Happy, Sad, Dance, Chill or Energetic, and optionally a genre.
-3. **Fine-tune (optional):** one slider per feature (danceability, energy, happiness, tempo). The middle keeps the mood as it is; move it toward *less* or *more*.
-4. **Generate**, then **Save**:
-   - By default, songs are **added to your existing playlist for that mood** ("Happy", or "Happy · Rock" with a genre filter). The preview leaves out songs already in it, so only new ones are added. The app remembers the playlist, so renaming it in Spotify is fine; if you delete it, the next save creates a new one.
-   - Check **Create a new playlist** to start a separate one ("Happy (2)"). Future songs are then added to that one.
+2. **Make a playlist by Mood or Genre:**
+   - **Mood:** Happy, Sad, Dance, Chill or Energetic. Songs are ranked by how far they lean toward the mood *compared with every analyzed song* (percentiles of valence, energy, danceability, acousticness and tempo), and the ones that fit well enough are kept. Fixed thresholds didn't work: the models' scores cluster in the middle, so in a dance-heavy library almost nothing was "low energy". Sad went from 1 to about 100 matches in a 521-song library.
+   - **Genre:** one or more of the 19 genres, ranked by how confident the genre model is.
+3. **Generate**, then **Save**:
+   - By default, songs are **added to your existing playlist for that mood or genre** ("Sad", or "House · Techno"). The preview leaves out songs already in it, so only new ones are added. The app remembers the playlist, so renaming it in Spotify is fine; if you delete it, the next save creates a new one.
+   - Check **Create a new playlist** to start a separate one ("Sad (2)"). Future songs are then added to that one.
 
 ## Deploy (Proxmox container + Tailscale)
 
@@ -115,7 +116,7 @@ src/audio/      Deezer preview lookup, decoding, YAMNet + Librosa feature extrac
 src/ml/         Analyzer: features -> genre + mood predictions
 src/web/        Flask app, routes, templates, static JS/CSS
 src/store.py    SQLite cache (songs, their sources, mood playlists) · src/library_sync.py incremental sync
-src/moods.py    mood presets + sliders · src/selector.py track ranking · src/playlists.py playlist names
+src/moods.py    mood recipes (feature weights) · src/selector.py percentile ranking · src/playlists.py playlist names
 src/spotify_client.py   Spotify login and playlist endpoints
 src/legacy/     the original model trained on Spotify audio-features (reference only)
 Dockerfile, compose.yml, deploy/serve.json   server deploy (app + Tailscale HTTPS)
@@ -123,7 +124,8 @@ Dockerfile, compose.yml, deploy/serve.json   server deploy (app + Tailscale HTTP
 
 ## Roadmap
 
-- **Now:** self-hosting on a Proxmox container over Tailscale (see Deploy). Next is checking the phone layout.
+- **Next:** lyrics as a mood signal (LRCLIB lyrics + a multilingual sentiment model), to catch sad songs with danceable beats.
+- **Multiple users:** per-user sources and playlists, sharing the analyzed-song cache.
 - **Better genres:** merge the genres the model confuses most (e.g. House / Techno / EDM), or add more songs per genre.
 - **Dataset lookup:** if a song is already in `dataset.csv`, use its real Spotify mood scores and only predict the rest.
 - **ReccoBeats hybrid:** use ReccoBeats audio features as the primary source, keep these models as the fallback, and benchmark them against it.
