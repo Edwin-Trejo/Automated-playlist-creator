@@ -151,3 +151,64 @@ def test_background_sync_runs_and_finishes(tmp_path):
     assert progress.running is True or progress.done == 1
     thread.join(timeout=5)
     assert progress.running is False and progress.analyzed == 1
+
+
+class FakeScorer:
+    version = "l1"
+
+    def score(self, lyrics):
+        return {"sad": 0.9 if "cry" in lyrics else 0.1, "happy": 0.5, "calm": 0.2}
+
+
+def lyrics_sync(tmp_path, lyrics, scorer=FakeScorer):
+    store = TrackStore(tmp_path / "t.db")
+    calls = []
+
+    def fake_lyrics(name, artist, album=None, duration_ms=None):
+        calls.append((name, artist, album, duration_ms))
+        found = lyrics[name]
+        if isinstance(found, Exception):
+            raise found
+        return found
+
+    sync = LibrarySync(store, FakeAnalyzer(), find_preview=lambda n, a: "u",
+                       download=lambda url: np.array([1.0], dtype=np.float32), lyrics=scorer, find_lyrics=fake_lyrics)
+    return sync, store, calls
+
+
+def test_lyrics_are_scored_after_the_audio(tmp_path):
+    from src.lyrics import LyricsUnavailable
+    lyrics = {"a": {"lyrics": "I cry every night", "instrumental": False},
+              "b": {"lyrics": None, "instrumental": True},
+              "c": {"lyrics": None, "instrumental": False}}
+    sync, store, calls = lyrics_sync(tmp_path, lyrics)
+    progress = SyncProgress()
+    sync.run([{**track("a"), "album": "Al", "duration_ms": 1000}, track("b"), track("c")], progress)
+    assert (progress.lyrics_total, progress.lyrics_done, progress.lyrics_found) == (3, 3, 1)
+    assert calls[0] == ("a", "Main", "Al", 1000)
+    a, b, c = store.get("a"), store.get("b"), store.get("c")
+    assert a["lyric_sad"] == 0.9 and a["lyrics_status"] == "found" and a["lyrics_version"] == "l1"
+    assert b["lyrics_status"] == "instrumental" and b["lyric_sad"] is None
+    assert c["lyrics_status"] == "none"
+
+    progress = SyncProgress()  # already checked with this lyrics model: nothing to do next time
+    sync.run([track("a"), track("b"), track("c")], progress)
+    assert progress.lyrics_total == 0
+
+
+def test_lyrics_service_down_stops_and_retries_next_sync(tmp_path):
+    from src.lyrics import LyricsUnavailable
+    sync, store, calls = lyrics_sync(tmp_path, {"a": LyricsUnavailable("get"), "b": {"lyrics": "x", "instrumental": False}})
+    progress = SyncProgress()
+    sync.run([track("a"), track("b")], progress)
+    assert progress.lyrics_done == 0 and len(calls) == 1 and progress.running is False and progress.lyrics_paused
+    assert store.ids_with_lyrics("l1") == set()
+
+
+def test_missing_lyrics_model_skips_lyrics(tmp_path):
+    def broken():
+        raise FileNotFoundError("lyrics_ridge.json")
+    sync, store, calls = lyrics_sync(tmp_path, {}, scorer=broken)
+    progress = SyncProgress()
+    sync.run([track("a")], progress)
+    assert progress.analyzed == 1 and progress.lyrics_total == 0 and calls == []

@@ -13,4 +13,5 @@ data/jazz/
 # Generated
 data/features/
 data/app.db
+data/lyrics_embedder/
 models/*.png

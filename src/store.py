@@ -7,6 +7,11 @@ COLUMNS = ("spotify_id", "uri", "name", "artists", "preview_found", "genre", "ge
 # analysis_source: "audio" (preview analyzed by our models), "dataset" (Spotify's scores from dataset.csv)
 # or "artist" (estimated from the artist's other songs). preview_found = 1 means the song has usable values.
 
+LYRIC_COLUMNS = ("lyric_sad", "lyric_happy", "lyric_romantic", "lyric_angry", "lyric_party", "lyric_calm")
+# Lyric mood scores (0..1, from src/ml/lyrics_mood.py) are written separately by set_lyrics, so re-analyzing a
+# song's audio keeps them. lyrics_status: "found", "none" (not on LRCLIB) or "instrumental".
+LYRICS_SCHEMA = {**{c: "REAL" for c in LYRIC_COLUMNS}, "lyrics_status": "TEXT", "lyrics_version": "TEXT"}
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS tracks (
     spotify_id TEXT PRIMARY KEY,
@@ -45,8 +50,10 @@ class TrackStore:
         with self._connect() as conn:
             conn.executescript(SCHEMA)
             existing = {r["name"] for r in conn.execute("PRAGMA table_info(tracks)")}
-            if "analysis_source" not in existing:  # databases created before fallbacks existed
-                conn.execute("ALTER TABLE tracks ADD COLUMN analysis_source TEXT")
+            # Columns added after the first release, for databases created before them.
+            for column, kind in {"analysis_source": "TEXT", **LYRICS_SCHEMA}.items():
+                if column not in existing:
+                    conn.execute(f"ALTER TABLE tracks ADD COLUMN {column} {kind}")
 
     def _connect(self):
         conn = sqlite3.connect(self.path, timeout=30)
@@ -88,6 +95,21 @@ class TrackStore:
             rows = conn.execute(
                 "SELECT spotify_id FROM tracks WHERE model_version = ? AND preview_found = 1 "
                 "AND COALESCE(analysis_source, 'audio') != 'artist'", (version,)).fetchall()
+        return {r["spotify_id"] for r in rows}
+
+    def set_lyrics(self, spotify_id, status, scores, version):
+        """Store a song's lyric mood scores ({"sad": 0.8, ...}, or None when it has no lyrics)."""
+        scores = scores or {}
+        values = [scores.get(c.removeprefix("lyric_")) for c in LYRIC_COLUMNS]
+        sets = ", ".join(f"{c} = ?" for c in LYRIC_COLUMNS)
+        with self._connect() as conn:
+            conn.execute(f"UPDATE tracks SET {sets}, lyrics_status = ?, lyrics_version = ? WHERE spotify_id = ?",
+                         [*values, status, version, spotify_id])
+
+    def ids_with_lyrics(self, version):
+        """Songs whose lyrics were already checked with this lyrics model version."""
+        with self._connect() as conn:
+            rows = conn.execute("SELECT spotify_id FROM tracks WHERE lyrics_version = ?", (version,)).fetchall()
         return {r["spotify_id"] for r in rows}
 
     @staticmethod

@@ -22,8 +22,8 @@ class FakeSession:
         self.responses = list(responses)
         self.calls = []
 
-    def get(self, url, params=None, timeout=None):
-        self.calls.append({"url": url, "params": params})
+    def get(self, url, params=None, timeout=None, **kwargs):
+        self.calls.append({"url": url, "params": params, **kwargs})
         item = self.responses.pop(0)
         if isinstance(item, Exception):
             raise item

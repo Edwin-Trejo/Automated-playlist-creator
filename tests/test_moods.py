@@ -1,6 +1,6 @@
 import pytest
 
-from src.moods import MOOD_FEATURES, MOODS, mood_weights
+from src.moods import LYRIC_FEATURES, MOOD_FEATURES, MOODS, mood_weights
 
 
 def test_presets_exist():
@@ -9,7 +9,7 @@ def test_presets_exist():
 
 def test_weights_use_known_features():
     for weights in MOODS.values():
-        assert set(weights) <= {*MOOD_FEATURES, "tempo_near"}
+        assert set(weights) <= {*MOOD_FEATURES, *LYRIC_FEATURES, "tempo_near"}
         assert sum(abs(w) for w in weights.values()) == pytest.approx(1.0)
 
 

@@ -1,6 +1,6 @@
 # Automated Playlist Creator
 
-A local Flask web app that reads your Spotify **Liked Songs and your own playlists**, analyzes every song with machine-learning models trained for this project, and builds playlists by **mood, danceability, energy, tempo and genre**. Each mood gets its own playlist in your Spotify account ("Happy", or "Happy · Reggaeton / Urbano" with a genre filter), and new matching songs are added to it over time.
+A Flask web app that reads your Spotify **Liked Songs and your own playlists**, analyzes every song's **audio and lyrics** with machine-learning models trained for this project, and builds playlists by **mood or genre**. Each mood or genre gets its own playlist in your Spotify account ("Sad", or "House · Techno"), and new matching songs are added to it over time.
 
 ## How it works
 
@@ -15,6 +15,8 @@ Librosa ─► tempo, loudness, beat strength ───────────�
    ├─► LightGBM classifier ──────────► genre (19 broad genres)
    └─► 4 LightGBM regressors ────────► danceability, energy, valence, acousticness
    ▼
+Lyrics (LRCLIB) ─► multilingual-e5-small embedding ─► 6 ridge models ─► sad, happy, romantic, angry, party, calm
+   ▼
 SQLite cache (each song analyzed once, remembers which source it came from)
    ▼
 Mood (ranked against your whole library)  or  Genre ─► selector ─► preview
@@ -24,6 +26,7 @@ Add new songs to that mood's or genre's playlist (or create it)
 
 - **Why train mood models?** Spotify stopped serving `audio-features` (danceability, energy, valence…) to new apps in Nov 2024. This project re-creates them: `data/dataset.csv` holds Spotify's original scores for ~114k songs, and the models learn to predict those scores from each song's audio.
 - **Transfer learning:** YAMNet (Google, trained on millions of YouTube clips) is used as a frozen feature extractor, the "ears". Only the small LightGBM models on top are trained.
+- **Lyrics:** audio alone can't hear that a perreo track is about heartbreak. During sync the app fetches each song's lyrics from [LRCLIB](https://lrclib.net) (free, no key), turns them into a 384-number "meaning" vector with a multilingual embedding model (runs locally, handles Spanish slang), and six small linear models score how sad, happy, romantic, angry, party-like and calm the lyrics are. Only these scores are stored, never the lyrics. The models were trained once to copy **Claude Haiku 5.5**, which read the lyrics of 6,607 `dataset.csv` songs for meaning (about $0.72, labels in `data/lyrics_labels.csv`). Running the app needs no API key, and `scripts/train_lyrics_model.py` retrains for free.
 - **Genres:** Spotify's 114 genre labels in `dataset.csv` are grouped into 19 broad genres (Reggaeton / Urbano, Latin, House, Techno, K-pop / J-pop / C-pop, Rock…) by `data/genre_groups.json`. The genre is used as a filter for mood playlists, so only the broad genres matter.
 
 ## Model results
@@ -47,6 +50,14 @@ Random guessing would get about 5%. Most mistakes are between similar-sounding g
 | Energy | 0.090 | 0.198 | 0.75 |
 | Valence | 0.142 | 0.220 | 0.52 |
 | Acousticness | 0.125 | 0.276 | 0.70 |
+
+**Lyrics:** trained on 6,607 `dataset.csv` songs labeled by Claude Haiku 5.5, tested on a 364-song personal library it never saw. The score is Spearman correlation with Claude's own scores (1 = same order).
+
+| Mood | sad | happy | romantic | angry | party | calm |
+|---|---|---|---|---|---|---|
+| Agreement with Claude | 0.68 | 0.51 | 0.71 | 0.50 | 0.80 | 0.56 |
+
+The Sad playlist built from audio + these free scores shares 23 of its 30 songs with the one built from audio + Claude's scores. A word-level sentiment model was tried first and failed: it rated aggressive and explicit lyrics as "sad". More training songs didn't help: the learning curve was flat from 1,600 to 6,600 songs.
 
 ## Setup
 
@@ -80,7 +91,7 @@ Open the redirect URI's host (e.g. http://127.0.0.1:5000) and log in with Spotif
 
 1. **Sources:** Liked Songs is selected by default. Check any of your own playlists to use them too, then click **Sync selected**. The first sync analyzes every song once (a few seconds per song); later syncs only process new songs.
 2. **Make a playlist by Mood or Genre:**
-   - **Mood:** Happy, Sad, Dance, Chill or Energetic. Songs are ranked by how far they lean toward the mood *compared with every analyzed song* (percentiles of valence, energy, danceability, acousticness and tempo), and the ones that fit well enough are kept. Fixed thresholds didn't work: the models' scores cluster in the middle, so in a dance-heavy library almost nothing was "low energy". Sad went from 1 to about 100 matches in a 521-song library.
+   - **Mood:** Happy, Sad, Dance, Chill or Energetic. Songs are ranked by how far they lean toward the mood *compared with every analyzed song* (percentiles of valence, energy, danceability, acousticness and tempo), and the ones that fit well enough are kept. Fixed thresholds didn't work: the models' scores cluster in the middle, so in a dance-heavy library almost nothing was "low energy". Sad went from 1 to about 100 matches in a 521-song library. **Lyrics** count too: 40% of Sad (so a heartbreak song with a party beat still counts as sad), 20% of Happy and Chill. Songs without lyrics are ranked by audio alone. After an update that adds lyrics, the next sync checks every song's lyrics once (about 1–2 s per song).
    - **Genre:** one or more of the 19 genres, ranked by how confident the genre model is.
 3. **Generate**, then **Save**:
    - By default, songs are **added to your existing playlist for that mood or genre** ("Sad", or "House · Techno"). The preview leaves out songs already in it, so only new ones are added. The app remembers the playlist, so renaming it in Spotify is fine; if you delete it, the next save creates a new one.
@@ -110,10 +121,12 @@ python -m pytest
 
 ```
 notebooks/      Colab training notebook (YAMNet features + LightGBM models)
-models/         trained models (yamnet.onnx, genre_lgbm.txt, mood_*.txt, *_meta.json)
+models/         trained models (yamnet.onnx, genre_lgbm.txt, mood_*.txt, *_meta.json, lyrics_ridge.json)
+scripts/        train_lyrics_model.py (retrains the lyrics model from data/lyrics_labels.csv, no API key)
 data/           dataset.csv (Spotify scores + genres), genre_groups.json (114 -> 19 genres), app.db (local cache)
 src/audio/      Deezer preview lookup, decoding, YAMNet + Librosa feature extraction
-src/ml/         Analyzer: features -> genre + mood predictions
+src/ml/         Analyzer: features -> genre + mood predictions · lyrics_mood.py: lyrics -> mood scores
+src/lyrics.py   LRCLIB lyrics lookup
 src/web/        Flask app, routes, templates, static JS/CSS
 src/store.py    SQLite cache (songs, their sources, mood playlists) · src/library_sync.py incremental sync
 src/moods.py    mood recipes (feature weights) · src/selector.py percentile ranking · src/playlists.py playlist names
@@ -124,7 +137,6 @@ Dockerfile, compose.yml, deploy/serve.json   server deploy (app + Tailscale HTTP
 
 ## Roadmap
 
-- **Next:** lyrics as a mood signal (LRCLIB lyrics + a multilingual sentiment model), to catch sad songs with danceable beats.
 - **Multiple users:** per-user sources and playlists, sharing the analyzed-song cache.
 - **Better genres:** merge the genres the model confuses most (e.g. House / Techno / EDM), or add more songs per genre.
 - **Dataset lookup:** if a song is already in `dataset.csv`, use its real Spotify mood scores and only predict the rest.

@@ -75,11 +75,15 @@ async function pollSync() {
   } catch (e) {
     return showSyncError(e.message);
   }
-  $("progress-bar").max = p.total || 1;
-  $("progress-bar").value = p.done;
+  // Audio first, then lyrics (new songs, or every song after a new lyrics model).
+  $("progress-bar").max = (p.total + p.lyrics_total) || 1;
+  $("progress-bar").value = p.done + p.lyrics_done;
+  const lyrics = !p.lyrics_total ? ""
+    : ` · lyrics ${p.lyrics_done}/${p.lyrics_total} (${p.lyrics_found} found)` +
+      (p.lyrics_paused ? ", paused: the lyrics site is busy, the rest continue on the next sync" : "");
   $("progress-text").textContent =
     `${p.done}/${p.total} · ${p.analyzed} analyzed · ${p.from_dataset} from Spotify data · ` +
-    `${p.estimated} estimated from artist · ${p.no_preview} no preview · ${p.failed} failed`;
+    `${p.estimated} estimated from artist · ${p.no_preview} no preview · ${p.failed} failed${lyrics}`;
   $("counts").textContent = `${p.counts.analyzed} analyzed · ${p.counts.no_preview} without preview (all sources)`;
   if (p.running) {
     $("sync-btn").disabled = true;

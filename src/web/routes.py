@@ -102,7 +102,7 @@ def sync(sp):
     tracks = list(tracks.values())
     state.progress = SyncProgress()
     syncer = LibrarySync(state.store, analyzer, find_preview=state.find_preview, download=state.download,
-                         dataset=state.dataset)
+                         dataset=state.dataset, lyrics=state.get_lyrics if state.lyrics_factory else None)
     state.sync_thread = start_background_sync(tracks, syncer, state.progress)
     return jsonify(state.progress.to_dict()), 202
 

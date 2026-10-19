@@ -73,3 +73,27 @@ def test_get_many_preserves_order(store):
     for sid in "abc":
         store.upsert(row(sid))
     assert [t["spotify_id"] for t in store.get_many(["c", "zz", "a"])] == ["c", "a"]
+
+def test_lyrics_are_stored_and_survive_reanalysis(store):
+    store.upsert(row("a"))
+    assert store.get("a")["lyric_sad"] is None and store.ids_with_lyrics("l1") == set()
+    store.set_lyrics("a", "found", {"sad": 0.8, "happy": 0.1, "calm": 0.3}, "l1")
+    store.upsert(row("a", genre="rock"))  # a new audio analysis keeps the lyric scores
+    got = store.get("a")
+    assert (got["lyric_sad"], got["lyric_happy"], got["lyric_party"]) == (0.8, 0.1, None)
+    assert got["lyrics_status"] == "found" and store.ids_with_lyrics("l1") == {"a"}
+    assert store.ids_with_lyrics("l2") == set()  # a new lyrics model re-checks every song
+    store.set_lyrics("a", "none", None, "l2")
+    assert store.get("a")["lyric_sad"] is None
+
+
+def test_old_database_gets_new_columns(tmp_path):
+    import sqlite3
+    path = tmp_path / "old.db"
+    with sqlite3.connect(path) as conn:
+        conn.execute("CREATE TABLE tracks (spotify_id TEXT PRIMARY KEY, uri TEXT NOT NULL, name TEXT NOT NULL, "
+                     "artists TEXT NOT NULL, preview_found INTEGER NOT NULL DEFAULT 0, genre TEXT, genre_conf REAL, "
+                     "danceability REAL, energy REAL, valence REAL, acousticness REAL, tempo REAL, "
+                     "model_version TEXT, analyzed_at TEXT)")
+    TrackStore(path).upsert(row("a"))
+    assert {"analysis_source", "lyric_sad", "lyrics_version"} <= set(TrackStore(path).get("a"))

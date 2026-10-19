@@ -87,6 +87,7 @@ def env(tmp_path):
         "SYNC_FIND_PREVIEW": lambda n, a: "http://p",
         "SYNC_DOWNLOAD": lambda url: np.ones(10, dtype="float32"),
         "DATASET": None,
+        "LYRICS_FACTORY": None,
     })
     return app, app.test_client(), store, sp
 

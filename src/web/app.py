@@ -14,6 +14,7 @@ from src.config import DB_PATH
 from src.fallback import DatasetLookup
 from src.library_sync import SyncProgress
 from src.ml.analyzer import Analyzer
+from src.ml.lyrics_mood import LyricsMood
 from src.spotify_client import DEFAULT_REDIRECT, make_oauth
 from src.store import TrackStore
 
@@ -28,14 +29,22 @@ class AppState:
     find_preview: object
     download: object
     dataset: object = None
+    lyrics_factory: object = None  # None turns lyrics off
     progress: SyncProgress = field(default_factory=SyncProgress)
     sync_thread: threading.Thread | None = None
     _analyzer: Analyzer | None = None
+    _lyrics: object = None
 
     def get_analyzer(self):
         if self._analyzer is None:
             self._analyzer = self.analyzer_factory()
         return self._analyzer
+
+    def get_lyrics(self):
+        """The lyrics mood model, loaded on first use (the first load downloads the embedding model)."""
+        if self._lyrics is None:
+            self._lyrics = self.lyrics_factory()
+        return self._lyrics
 
 
 def create_app(test_config=None):
@@ -62,6 +71,7 @@ def create_app(test_config=None):
         find_preview=cfg.get("SYNC_FIND_PREVIEW", find_preview),
         download=cfg.get("SYNC_DOWNLOAD", download_audio),
         dataset=cfg["DATASET"] if "DATASET" in cfg else DatasetLookup(),  # loads dataset.csv on first use
+        lyrics_factory=cfg["LYRICS_FACTORY"] if "LYRICS_FACTORY" in cfg else LyricsMood.load,
     )
 
     from src.web.routes import bp

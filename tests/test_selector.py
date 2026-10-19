@@ -74,3 +74,20 @@ def test_genre_playlist_keeps_genre_and_ranks_by_confidence():
 
 def test_size_limits_results():
     assert len(select_tracks([t(str(i)) for i in range(10)], genres=["pop"], size=3)) == 3
+
+
+def test_lyrics_count_toward_sad_as_a_percentile():
+    # The lyrics model's scores are squeezed (0.1-0.7 here); the saddest lyrics still count fully.
+    songs = [{**s, "lyric_sad": 0.1 + 0.06 * i} for i, s in enumerate(library())]
+    heartbreak = t("hb", danceability=0.5, energy=0.5, valence=0.5, lyric_sad=0.7)
+    party = t("pt", danceability=0.5, energy=0.5, valence=0.5, lyric_sad=0.1)
+    pct = Percentiles(songs)
+    weights = {"valence": -0.3, "energy": -0.18, "danceability": -0.12, "lyric_sad": 0.4}
+    assert mood_score(heartbreak, weights, pct) == pytest.approx(0.6 * 0.5 + 0.4 * 1.0)
+    assert mood_score(party, weights, pct) == pytest.approx(0.6 * 0.5 + 0.4 * 0.0)
+
+
+def test_songs_without_lyrics_are_judged_by_audio_alone():
+    pct = Percentiles(library())
+    song = t("x", danceability=0.0, energy=0.0, valence=0.0)  # no lyric_sad
+    assert mood_score(song, {"valence": -0.3, "energy": -0.18, "danceability": -0.12, "lyric_sad": 0.4}, pct) == 1.0

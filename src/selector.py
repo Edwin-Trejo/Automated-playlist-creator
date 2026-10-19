@@ -1,6 +1,6 @@
 from bisect import bisect_left, bisect_right
 
-from src.moods import DANCE_TEMPO, MOOD_FEATURES, TEMPO_TOLERANCE, mood_weights
+from src.moods import DANCE_TEMPO, LYRIC_FEATURES, MOOD_FEATURES, TEMPO_TOLERANCE, mood_weights
 
 ESTIMATE_PENALTY = 0.8  # songs estimated from their artist (never heard) rank below analyzed songs
 MIN_SCORE = 0.7  # a mood playlist keeps songs at least this typical of the mood (1 = the most extreme in the library)
@@ -20,7 +20,8 @@ class Percentiles:
     """Where a value sits among the reference songs: 0 = lowest, 1 = highest."""
 
     def __init__(self, reference):
-        self.sorted = {f: sorted(t[f] for t in reference if t.get(f) is not None) for f in MOOD_FEATURES}
+        features = (*MOOD_FEATURES, *LYRIC_FEATURES)
+        self.sorted = {f: sorted(t[f] for t in reference if t.get(f) is not None) for f in features}
 
     def __call__(self, feature, value):
         values = self.sorted[feature]
@@ -37,11 +38,14 @@ def _tempo_near(tempo):
 
 
 def mood_score(track, weights, pct):
-    """Weighted mean of how far toward the mood each feature is, 0..1. None if a feature is missing."""
-    total = 0.0
+    """Weighted mean of how far toward the mood each feature is, 0..1. None if an audio feature is missing;
+    missing lyric scores are left out of the mean, so songs without lyrics are judged by audio alone."""
+    total = used = 0.0
     for feature, weight in weights.items():
         value = track.get("tempo" if feature == "tempo_near" else feature)
         if value is None:
+            if feature in LYRIC_FEATURES:
+                continue
             return None
         if feature == "tempo_near":
             part = _tempo_near(value)
@@ -49,7 +53,8 @@ def mood_score(track, weights, pct):
             p = pct(feature, value)
             part = p if weight > 0 else 1 - p
         total += abs(weight) * part
-    return total / sum(abs(w) for w in weights.values())
+        used += abs(weight)
+    return total / used
 
 
 def select_tracks(tracks, mood=None, genres=None, size=25, reference=None):
