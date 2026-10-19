@@ -1,6 +1,7 @@
 import numpy as np
 
 from src.library_sync import LibrarySync, SyncProgress, iter_liked_tracks, iter_source_tracks, start_background_sync
+from src.lyrics import LOOKUP_VERSION
 from src.ml.analyzer import MODEL_VERSION
 from src.store import TrackStore
 
@@ -189,20 +190,29 @@ def test_lyrics_are_scored_after_the_audio(tmp_path):
     a, b, c = store.get("a"), store.get("b"), store.get("c")
     assert a["lyric_sad"] == 0.9 and a["lyrics_status"] == "found" and a["lyrics_version"] == "l1"
     assert b["lyrics_status"] == "instrumental" and b["lyric_sad"] is None
-    assert c["lyrics_status"] == "none"
+    assert c["lyrics_status"] == "none" and c["lyrics_version"] == f"l1+{LOOKUP_VERSION}"
 
     progress = SyncProgress()  # already checked with this lyrics model: nothing to do next time
     sync.run([track("a"), track("b"), track("c")], progress)
     assert progress.lyrics_total == 0
 
 
-def test_lyrics_service_down_stops_and_retries_next_sync(tmp_path):
+def test_unavailable_song_is_skipped_and_retried_next_sync(tmp_path):
     from src.lyrics import LyricsUnavailable
     sync, store, calls = lyrics_sync(tmp_path, {"a": LyricsUnavailable("get"), "b": {"lyrics": "x", "instrumental": False}})
     progress = SyncProgress()
     sync.run([track("a"), track("b")], progress)
-    assert progress.lyrics_done == 0 and len(calls) == 1 and progress.running is False and progress.lyrics_paused
-    assert store.ids_with_lyrics("l1") == set()
+    assert len(calls) == 2 and progress.lyrics_paused and progress.running is False
+    assert store.ids_with_lyrics("l1", LOOKUP_VERSION) == {"b"}  # "a" is tried again next sync
+
+
+def test_lyrics_wait_for_next_sync_when_the_sites_stay_down(tmp_path):
+    from src.library_sync import MAX_UNAVAILABLE_IN_A_ROW
+    from src.lyrics import LyricsUnavailable
+    names = [f"s{i}" for i in range(MAX_UNAVAILABLE_IN_A_ROW + 3)]
+    sync, store, calls = lyrics_sync(tmp_path, {n: LyricsUnavailable("get") for n in names})
+    sync.run([track(n) for n in names], SyncProgress())
+    assert len(calls) == MAX_UNAVAILABLE_IN_A_ROW
 
 
 def test_missing_lyrics_model_skips_lyrics(tmp_path):

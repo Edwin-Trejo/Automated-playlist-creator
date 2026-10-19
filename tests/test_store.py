@@ -87,6 +87,16 @@ def test_lyrics_are_stored_and_survive_reanalysis(store):
     assert store.get("a")["lyric_sad"] is None
 
 
+def test_songs_without_lyrics_are_looked_up_again_after_a_new_lyrics_site(store):
+    for sid in "abc":
+        store.upsert(row(sid))
+    store.set_lyrics("a", "found", {"sad": 0.5}, "l1")
+    store.set_lyrics("b", "none", None, "l1")      # checked before the lookup version existed
+    store.set_lyrics("c", "none", None, "l1+2")    # checked with lookup version 2
+    assert store.ids_with_lyrics("l1", "2") == {"a", "c"}
+    assert store.ids_with_lyrics("l1", "3") == {"a"}
+
+
 def test_old_database_gets_new_columns(tmp_path):
     import sqlite3
     path = tmp_path / "old.db"

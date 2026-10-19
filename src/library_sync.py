@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from src.audio.loader import download_audio
 from src.audio.preview import find_preview
 from src.fallback import artist_estimate
-from src.lyrics import LyricsUnavailable, find_lyrics
+from src.lyrics import LOOKUP_VERSION, LyricsUnavailable, find_lyrics
 from src.ml.analyzer import MODEL_VERSION
 from src.spotify_client import playlist_entries
 
@@ -15,6 +15,7 @@ log = logging.getLogger(__name__)
 
 
 LIKED = "liked"  # source id for Liked Songs; any other source id is a Spotify playlist id
+MAX_UNAVAILABLE_IN_A_ROW = 5  # songs in a row the lyrics sites couldn't answer before lyrics wait for the next sync
 
 
 def _track(entry):
@@ -155,23 +156,30 @@ class LibrarySync:
         except Exception:
             log.exception("Lyrics model unavailable; songs are ranked by audio only this sync")
             return
-        checked = self.store.ids_with_lyrics(scorer.version)
+        checked = self.store.ids_with_lyrics(scorer.version, LOOKUP_VERSION)
         usable = {t["spotify_id"] for t in self.store.analyzed_tracks()}
         todo = [t for t in tracks if t["spotify_id"] in usable and t["spotify_id"] not in checked]
         progress.lyrics_total = len(todo)
+        unavailable_in_a_row = 0
         for t in todo:
             try:
                 found = self.find_lyrics(t["name"], t["artists"].split(", ")[0], t.get("album"), t.get("duration_ms"))
+                unavailable_in_a_row = 0
                 if found["lyrics"]:
                     self.store.set_lyrics(t["spotify_id"], "found", scorer.score(found["lyrics"]), scorer.version)
                     progress.lyrics_found += 1
+                elif found["instrumental"]:
+                    self.store.set_lyrics(t["spotify_id"], "instrumental", None, scorer.version)
                 else:
-                    status = "instrumental" if found["instrumental"] else "none"
-                    self.store.set_lyrics(t["spotify_id"], status, None, scorer.version)
+                    # Remembered per lookup version, so adding a lyrics source looks these songs up again.
+                    self.store.set_lyrics(t["spotify_id"], "none", None, f"{scorer.version}+{LOOKUP_VERSION}")
             except LyricsUnavailable:
-                log.warning("LRCLIB is unavailable; the remaining lyrics are tried on the next sync")
+                # LRCLIB is busy and lyrics.ovh doesn't have this song: left unchecked for the next sync.
                 progress.lyrics_paused = True
-                return
+                unavailable_in_a_row += 1
+                if unavailable_in_a_row >= MAX_UNAVAILABLE_IN_A_ROW:
+                    log.warning("Lyrics sites are unavailable; the remaining lyrics are tried on the next sync")
+                    return
             except Exception:
                 traceback.print_exc()  # left unchecked, so the next sync tries it again
             progress.lyrics_done += 1

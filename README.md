@@ -15,7 +15,7 @@ Librosa ─► tempo, loudness, beat strength ───────────�
    ├─► LightGBM classifier ──────────► genre (19 broad genres)
    └─► 4 LightGBM regressors ────────► danceability, energy, valence, acousticness
    ▼
-Lyrics (LRCLIB) ─► multilingual-e5-small embedding ─► 6 ridge models ─► sad, happy, romantic, angry, party, calm
+Lyrics (LRCLIB, else lyrics.ovh) ─► multilingual-e5-small embedding ─► 6 ridge models ─► sad, happy, romantic, angry, party, calm
    ▼
 SQLite cache (each song analyzed once, remembers which source it came from)
    ▼
@@ -26,7 +26,7 @@ Add new songs to that mood's or genre's playlist (or create it)
 
 - **Why train mood models?** Spotify stopped serving `audio-features` (danceability, energy, valence…) to new apps in Nov 2024. This project re-creates them: `data/dataset.csv` holds Spotify's original scores for ~114k songs, and the models learn to predict those scores from each song's audio.
 - **Transfer learning:** YAMNet (Google, trained on millions of YouTube clips) is used as a frozen feature extractor, the "ears". Only the small LightGBM models on top are trained.
-- **Lyrics:** audio alone can't hear that a perreo track is about heartbreak. During sync the app fetches each song's lyrics from [LRCLIB](https://lrclib.net) (free, no key), turns them into a 384-number "meaning" vector with a multilingual embedding model (runs locally, handles Spanish slang), and six small linear models score how sad, happy, romantic, angry, party-like and calm the lyrics are. Only these scores are stored, never the lyrics. The models were trained once to copy **Claude Haiku 5.5**, which read the lyrics of 6,607 `dataset.csv` songs for meaning (about $0.72, labels in `data/lyrics_labels.csv`). Running the app needs no API key, and `scripts/train_lyrics_model.py` retrains for free.
+- **Lyrics:** audio alone can't hear that a perreo track is about heartbreak. During sync the app fetches each song's lyrics from [LRCLIB](https://lrclib.net), or from [lyrics.ovh](https://lyrics.ovh) when LRCLIB doesn't have the song or is rate limiting (both free, no key), turns them into a 384-number "meaning" vector with a multilingual embedding model (runs locally, handles Spanish slang), and six small linear models score how sad, happy, romantic, angry, party-like and calm the lyrics are. Only these scores are stored, never the lyrics. The models were trained once to copy **Claude Haiku 5.5**, which read the lyrics of 6,607 `dataset.csv` songs for meaning (about $0.72, labels in `data/lyrics_labels.csv`). Running the app needs no API key, and `scripts/train_lyrics_model.py` retrains for free.
 - **Genres:** Spotify's 114 genre labels in `dataset.csv` are grouped into 19 broad genres (Reggaeton / Urbano, Latin, House, Techno, K-pop / J-pop / C-pop, Rock…) by `data/genre_groups.json`. The genre is used as a filter for mood playlists, so only the broad genres matter.
 
 ## Model results
@@ -126,7 +126,7 @@ scripts/        train_lyrics_model.py (retrains the lyrics model from data/lyric
 data/           dataset.csv (Spotify scores + genres), genre_groups.json (114 -> 19 genres), app.db (local cache)
 src/audio/      Deezer preview lookup, decoding, YAMNet + Librosa feature extraction
 src/ml/         Analyzer: features -> genre + mood predictions · lyrics_mood.py: lyrics -> mood scores
-src/lyrics.py   LRCLIB lyrics lookup
+src/lyrics.py   lyrics lookup (LRCLIB, then lyrics.ovh)
 src/web/        Flask app, routes, templates, static JS/CSS
 src/store.py    SQLite cache (songs, their sources, mood playlists) · src/library_sync.py incremental sync
 src/moods.py    mood recipes (feature weights) · src/selector.py percentile ranking · src/playlists.py playlist names

@@ -106,10 +106,13 @@ class TrackStore:
             conn.execute(f"UPDATE tracks SET {sets}, lyrics_status = ?, lyrics_version = ? WHERE spotify_id = ?",
                          [*values, status, version, spotify_id])
 
-    def ids_with_lyrics(self, version):
-        """Songs whose lyrics were already checked with this lyrics model version."""
+    def ids_with_lyrics(self, version, lookup=None):
+        """Songs whose lyrics were already checked with this lyrics model version. Songs where no lyrics were
+        found are stored as "<version>+<lookup>" and only count for that lookup version (the set of lyrics sites)."""
         with self._connect() as conn:
-            rows = conn.execute("SELECT spotify_id FROM tracks WHERE lyrics_version = ?", (version,)).fetchall()
+            rows = conn.execute(
+                "SELECT spotify_id FROM tracks WHERE (lyrics_version = ? AND COALESCE(lyrics_status, '') != 'none') "
+                "OR lyrics_version = ?", (version, f"{version}+{lookup}")).fetchall()
         return {r["spotify_id"] for r in rows}
 
     @staticmethod
